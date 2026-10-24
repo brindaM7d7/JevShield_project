@@ -1,8 +1,23 @@
+# Ignore Git version control
 .git
-venv
+.gitignore
+
+# Ignore local Python virtual environments and caches
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Ignore test files and test caches from production image
+tests/
+
+# Ignore uncommitted large raw dataset (keep sample_urls.csv for CI/CD)
 data/phishing_urls.csv
+
+# Ignore local SQLite databases and secrets
 *.db
 .env
-__pycache__
-.pytest_cache
-*.pyc
+
+# Ignore temporary screenshots and logs
+screenshots/
+*.log
