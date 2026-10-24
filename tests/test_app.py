@@ -25,7 +25,11 @@ def test_health_endpoint(client):
 def test_index_endpoint(client):
     res = client.get("/")
     assert res.status_code == 200
-    assert b"JevShield" in res.data
+    assert b"JEVSHIELD" in res.data
+    assert b"id=\"scanner\"" in res.data
+    assert b"id=\"chat\"" in res.data
+    assert b"id=\"history\"" in res.data
+    assert b"id=\"how\"" in res.data
 
 
 def test_predict_valid_safe_url(client):

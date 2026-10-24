@@ -1,737 +1,655 @@
 /**
  * script.js - Client-Side Controller for JevShield
- * Plain vanilla JavaScript handling tab navigation, API calls, radar animations,
- * score ring count-ups, screenshot upload preview, chatbot state, and scan history.
- *
- * Security: Uses textContent and safe DOM construction (no innerHTML with raw user data).
+ * Unifies SpaceEdu Hero Mode Switching with JevShield Phishing Detection System
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Current active scan result stored for chatbot context
-    let currentScan = null;
-    let selectedScreenshotFile = null;
+  let currentScan = null;
+  let selectedScreenshotFile = null;
 
-    // DOM Elements - Tabs
-    const tabBtns = document.querySelectorAll(".tab-btn");
-    const tabPanels = {
-        "tab-btn-single": document.getElementById("tab-single"),
-        "tab-btn-compare": document.getElementById("tab-compare"),
-        "tab-btn-screenshot": document.getElementById("tab-screenshot"),
+  // Mode Selection Elements
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const tabPanels = {
+    single: document.getElementById("tab-single"),
+    compare: document.getElementById("tab-compare"),
+    image: document.getElementById("tab-screenshot")
+  };
+  const tabBtnMap = {
+    single: document.getElementById("tab-btn-single"),
+    compare: document.getElementById("tab-btn-compare"),
+    image: document.getElementById("tab-btn-screenshot")
+  };
+
+  /**
+   * Global mode switcher: 'single' | 'compare' | 'image'
+   */
+  function selectMode(mode) {
+    if (!tabPanels[mode]) mode = 'single';
+
+    tabBtns.forEach(btn => {
+      btn.classList.remove("active");
+      btn.setAttribute("aria-selected", "false");
+    });
+    Object.values(tabPanels).forEach(panel => {
+      if (panel) {
+        panel.classList.remove("active");
+        panel.classList.add("hidden");
+      }
+    });
+
+    if (tabBtnMap[mode]) {
+      tabBtnMap[mode].classList.add("active");
+      tabBtnMap[mode].setAttribute("aria-selected", "true");
+    }
+    if (tabPanels[mode]) {
+      tabPanels[mode].classList.remove("hidden");
+      tabPanels[mode].classList.add("active");
+    }
+
+    // Auto-focus input
+    if (mode === 'single') {
+      const input = document.getElementById("url-input");
+      if (input) setTimeout(() => input.focus(), 300);
+    } else if (mode === 'compare') {
+      const inputA = document.getElementById("compare-url-a");
+      if (inputA) setTimeout(() => inputA.focus(), 300);
+    }
+  }
+
+  // Expose globally so Hero script and nav links can call it
+  window.selectMode = selectMode;
+
+  // Hook tab buttons
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.id === "tab-btn-single") selectMode("single");
+      else if (btn.id === "tab-btn-compare") selectMode("compare");
+      else if (btn.id === "tab-btn-screenshot") selectMode("image");
+    });
+  });
+
+  // Hook nav links with data-mode
+  document.querySelectorAll('a[data-mode]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const mode = link.getAttribute('data-mode');
+      if (mode) selectMode(mode);
+    });
+  });
+
+  // Single Scan Form elements
+  const urlInput = document.getElementById("url-input");
+  const btnPaste = document.getElementById("btn-paste");
+  const btnClear = document.getElementById("btn-clear");
+  const singleError = document.getElementById("single-error");
+
+  if (urlInput) {
+    urlInput.addEventListener("input", () => {
+      if (urlInput.value.trim().length > 0) {
+        btnClear.classList.remove("hidden");
+      } else {
+        btnClear.classList.add("hidden");
+      }
+      singleError.classList.add("hidden");
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", () => {
+      urlInput.value = "";
+      btnClear.classList.add("hidden");
+      singleError.classList.add("hidden");
+      urlInput.focus();
+    });
+  }
+
+  if (btnPaste) {
+    btnPaste.addEventListener("click", async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          urlInput.value = text.trim();
+          btnClear.classList.remove("hidden");
+          singleError.classList.add("hidden");
+          urlInput.focus();
+        }
+      } catch (err) {
+        singleError.textContent = "Could not access clipboard. Please paste manually.";
+        singleError.classList.remove("hidden");
+      }
+    });
+  }
+
+  // Compare Form elements
+  const compareUrlA = document.getElementById("compare-url-a");
+  const compareUrlB = document.getElementById("compare-url-b");
+  const compareError = document.getElementById("compare-error");
+
+  // Screenshot Form elements
+  const dropzone = document.getElementById("dropzone");
+  const screenshotFileInput = document.getElementById("screenshot-file");
+  const btnBrowseFile = document.getElementById("btn-browse-file");
+  const dropzoneEmpty = document.getElementById("dropzone-empty");
+  const dropzonePreview = document.getElementById("dropzone-preview");
+  const previewImage = document.getElementById("preview-image");
+  const previewFilename = document.getElementById("preview-filename");
+  const btnRemoveFile = document.getElementById("btn-remove-file");
+  const btnScanScreenshot = document.getElementById("btn-scan-screenshot");
+  const screenshotError = document.getElementById("screenshot-error");
+
+  if (btnBrowseFile && screenshotFileInput) {
+    btnBrowseFile.addEventListener("click", () => screenshotFileInput.click());
+  }
+  if (dropzone && screenshotFileInput) {
+    dropzone.addEventListener("click", (e) => {
+      if (e.target !== btnRemoveFile && !dropzonePreview.contains(e.target)) {
+        screenshotFileInput.click();
+      }
+    });
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImageFile(e.dataTransfer.files[0]);
+      }
+    });
+    screenshotFileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (btnRemoveFile) {
+    btnRemoveFile.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectedScreenshotFile = null;
+      screenshotFileInput.value = "";
+      dropzonePreview.classList.add("hidden");
+      dropzoneEmpty.classList.remove("hidden");
+      btnScanScreenshot.disabled = true;
+      screenshotError.classList.add("hidden");
+    });
+  }
+
+  function handleImageFile(file) {
+    const validTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      showError(screenshotError, "Only PNG, JPG, or WEBP images are accepted.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError(screenshotError, "Image exceeds the maximum allowed size of 5 MB.");
+      return;
+    }
+    screenshotError.classList.add("hidden");
+    selectedScreenshotFile = file;
+    previewFilename.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImage.src = e.target.result;
+      dropzoneEmpty.classList.add("hidden");
+      dropzonePreview.classList.remove("hidden");
+      btnScanScreenshot.disabled = false;
     };
+    reader.readAsDataURL(file);
+  }
 
-    // DOM Elements - Single Scan Form
-    const urlInput = document.getElementById("url-input");
-    const btnPaste = document.getElementById("btn-paste");
-    const btnClear = document.getElementById("btn-clear");
-    const singleError = document.getElementById("single-error");
+  if (btnScanScreenshot) {
+    btnScanScreenshot.addEventListener("click", handleScreenshotScan);
+  }
 
-    // DOM Elements - Compare Form
-    const compareUrlA = document.getElementById("compare-url-a");
-    const compareUrlB = document.getElementById("compare-url-b");
-    const compareError = document.getElementById("compare-error");
+  // Results DOM elements
+  const scanningRadar = document.getElementById("scanning-radar");
+  const singleResultCard = document.getElementById("single-result-card");
+  const ringFill = document.getElementById("ring-fill");
+  const scoreText = document.getElementById("score-text");
+  const verdictIcon = document.getElementById("verdict-icon");
+  const verdictTitle = document.getElementById("verdict-title");
+  const scannedUrlDisplay = document.getElementById("scanned-url-display");
+  const confidenceDisplay = document.getElementById("confidence-display");
+  const reasonsList = document.getElementById("reasons-list");
+  const didYouMeanCard = document.getElementById("did-you-mean-card");
+  const suggestionsChips = document.getElementById("suggestions-chips");
+  const websiteSummaryCard = document.getElementById("website-summary-card");
+  const summaryCategoryChip = document.getElementById("summary-category-chip");
+  const summaryBulletsList = document.getElementById("summary-bullets-list");
+  const summaryNoteText = document.getElementById("summary-note-text");
+  const screenshotDisclaimerNote = document.getElementById("screenshot-disclaimer-note");
 
-    // DOM Elements - Screenshot Form
-    const dropzone = document.getElementById("dropzone");
-    const screenshotFileInput = document.getElementById("screenshot-file");
-    const btnBrowseFile = document.getElementById("btn-browse-file");
-    const dropzoneEmpty = document.getElementById("dropzone-empty");
-    const dropzonePreview = document.getElementById("dropzone-preview");
-    const previewImage = document.getElementById("preview-image");
-    const previewFilename = document.getElementById("preview-filename");
-    const btnRemoveFile = document.getElementById("btn-remove-file");
-    const btnScanScreenshot = document.getElementById("btn-scan-screenshot");
-    const screenshotError = document.getElementById("screenshot-error");
+  const compareResultContainer = document.getElementById("compare-result-container");
+  const compareBanner = document.getElementById("compare-banner");
 
-    // DOM Elements - Results Section
-    const resultsSection = document.getElementById("results-section");
-    const scanningRadar = document.getElementById("scanning-radar");
-    const singleResultCard = document.getElementById("single-result-card");
-    const ringFill = document.getElementById("ring-fill");
-    const scoreText = document.getElementById("score-text");
-    const verdictIcon = document.getElementById("verdict-icon");
-    const verdictTitle = document.getElementById("verdict-title");
-    const scannedUrlDisplay = document.getElementById("scanned-url-display");
-    const confidenceDisplay = document.getElementById("confidence-display");
-    const reasonsList = document.getElementById("reasons-list");
-    const didYouMeanCard = document.getElementById("did-you-mean-card");
-    const suggestionsChips = document.getElementById("suggestions-chips");
-    const websiteSummaryCard = document.getElementById("website-summary-card");
-    const summaryCategoryChip = document.getElementById("summary-category-chip");
-    const summaryBulletsList = document.getElementById("summary-bullets-list");
-    const summaryNoteText = document.getElementById("summary-note-text");
-    const screenshotDisclaimerNote = document.getElementById("screenshot-disclaimer-note");
+  function showError(el, msg) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
 
-    // Compare Result DOM Elements
-    const compareResultContainer = document.getElementById("compare-result-container");
-    const compareBanner = document.getElementById("compare-banner");
-    const compareCardA = document.getElementById("compare-card-a");
-    const compareCardB = document.getElementById("compare-card-b");
+  function hideAllResults() {
+    singleResultCard.classList.add("hidden");
+    compareResultContainer.classList.add("hidden");
+  }
+
+  function showRadar() {
+    hideAllResults();
+    scanningRadar.classList.remove("hidden");
+  }
+
+  function hideRadar() {
+    scanningRadar.classList.add("hidden");
+  }
+
+  function animateScoreRing(targetScore, isPhishing) {
+    const radius = 50;
+    const circumference = 2 * Math.PI * radius; // 314.159
+    const offset = circumference - (targetScore / 100) * circumference;
+
+    let strokeColor = "#7F9468"; // deep sage safe
+    if (isPhishing) strokeColor = "#9B3030"; // dark red
+    else if (targetScore < 70) strokeColor = "#D9942E"; // amber
+
+    ringFill.style.stroke = strokeColor;
+    ringFill.style.strokeDashoffset = circumference;
+
+    let current = 0;
+    const duration = 1000;
+    const stepTime = 16;
+    const increment = targetScore / (duration / stepTime);
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= targetScore) {
+        current = targetScore;
+        clearInterval(timer);
+      }
+      scoreText.textContent = Math.round(current);
+    }, stepTime);
+
+    setTimeout(() => {
+      ringFill.style.strokeDashoffset = offset;
+    }, 50);
+  }
+
+  /**
+   * Single URL scan handler
+   */
+  async function handleSingleScan() {
+    const rawUrl = urlInput.value.trim();
+    if (!rawUrl) {
+      showError(singleError, "Enter a valid website address, like example.com");
+      return;
+    }
+    singleError.classList.add("hidden");
+    showRadar();
+
+    const startTime = Date.now();
+    try {
+      const res = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: rawUrl })
+      });
+      const data = await res.json();
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 1500 - elapsed);
+
+      setTimeout(() => {
+        hideRadar();
+        if (!res.ok) {
+          showError(singleError, data.error || "Please enter a valid website address");
+          return;
+        }
+        renderSingleResult(data, false);
+        loadHistory();
+      }, delay);
+    } catch (err) {
+      hideRadar();
+      showError(singleError, "Can't reach the server. Try again.");
+    }
+  }
+  window.handleSingleScan = handleSingleScan;
+
+  function renderSingleResult(data, isScreenshot = false) {
+    currentScan = data;
+    singleResultCard.classList.remove("hidden", "state-safe", "state-phishing");
+
+    const isPhishing = data.result === "phishing";
+    if (isPhishing) {
+      singleResultCard.classList.add("state-phishing");
+      verdictTitle.textContent = "Looks like phishing";
+      verdictTitle.className = "verdict-title verdict-phishing";
+      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="#9B3030"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`;
+    } else {
+      singleResultCard.classList.add("state-safe");
+      verdictTitle.textContent = "Looks safe";
+      verdictTitle.className = "verdict-title verdict-safe";
+      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="#7F9468"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
+    }
+
+    scannedUrlDisplay.textContent = data.url;
+    confidenceDisplay.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+    animateScoreRing(data.safety_score, isPhishing);
+
+    // Reasons list
+    reasonsList.innerHTML = "";
+    if (data.reasons && data.reasons.length > 0) {
+      data.reasons.forEach(r => {
+        const li = document.createElement("li");
+        li.className = "reason-item";
+        li.textContent = r;
+        reasonsList.appendChild(li);
+      });
+    }
+
+    // Did you mean suggestions
+    if (data.suggestions && data.suggestions.length > 0) {
+      suggestionsChips.innerHTML = "";
+      data.suggestions.forEach(s => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip-btn";
+        chip.textContent = s;
+        chip.addEventListener("click", () => {
+          urlInput.value = s;
+          selectMode("single");
+          handleSingleScan();
+        });
+        suggestionsChips.appendChild(chip);
+      });
+      didYouMeanCard.classList.remove("hidden");
+    } else {
+      didYouMeanCard.classList.add("hidden");
+    }
+
+    // Website summary
+    if (data.summary && data.summary.points) {
+      summaryCategoryChip.textContent = data.summary.category || "Website";
+      summaryBulletsList.innerHTML = "";
+      data.summary.points.forEach((pt, i) => {
+        const li = document.createElement("li");
+        li.textContent = pt;
+        li.style.animation = `bubble-slide 0.25s ease-out ${i * 0.1}s both`;
+        summaryBulletsList.appendChild(li);
+      });
+      summaryNoteText.classList.add("hidden");
+      websiteSummaryCard.classList.remove("hidden");
+    } else if (data.summary_note) {
+      summaryCategoryChip.textContent = "Notice";
+      summaryBulletsList.innerHTML = "";
+      summaryNoteText.textContent = data.summary_note;
+      summaryNoteText.classList.remove("hidden");
+      websiteSummaryCard.classList.remove("hidden");
+    } else {
+      websiteSummaryCard.classList.add("hidden");
+    }
+
+    if (isScreenshot) screenshotDisclaimerNote.classList.remove("hidden");
+    else screenshotDisclaimerNote.classList.add("hidden");
+
+    enableChat(data);
+    singleResultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  /**
+   * Compare Two Links scan handler
+   */
+  async function handleCompareScan() {
+    const urlA = compareUrlA.value.trim();
+    const urlB = compareUrlB.value.trim();
+    if (!urlA || !urlB) {
+      showError(compareError, "Please enter both website addresses to compare.");
+      return;
+    }
+    compareError.classList.add("hidden");
+    showRadar();
+
+    const startTime = Date.now();
+    try {
+      const res = await fetch("/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url_a: urlA, url_b: urlB })
+      });
+      const data = await res.json();
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 1500 - elapsed);
+
+      setTimeout(() => {
+        hideRadar();
+        if (!res.ok) {
+          showError(compareError, data.error || "Error comparing websites.");
+          return;
+        }
+        renderCompareResult(data);
+        loadHistory();
+      }, delay);
+    } catch (err) {
+      hideRadar();
+      showError(compareError, "Can't reach the server. Try again.");
+    }
+  }
+  window.handleCompareScan = handleCompareScan;
+
+  function renderCompareResult(data) {
+    compareResultContainer.classList.remove("hidden");
+
+    if (data.note) {
+      compareBanner.textContent = data.note;
+      compareBanner.classList.remove("hidden");
+    } else {
+      compareBanner.classList.add("hidden");
+    }
+
     const badgeA = document.getElementById("badge-a");
     const badgeB = document.getElementById("badge-b");
-    const verdictIconA = document.getElementById("verdict-icon-a");
-    const verdictIconB = document.getElementById("verdict-icon-b");
-    const verdictTitleA = document.getElementById("verdict-title-a");
-    const verdictTitleB = document.getElementById("verdict-title-b");
-    const urlDisplayA = document.getElementById("url-display-a");
-    const urlDisplayB = document.getElementById("url-display-b");
-    const scoreA = document.getElementById("score-a");
-    const scoreB = document.getElementById("score-b");
-    const confidenceA = document.getElementById("confidence-a");
-    const confidenceB = document.getElementById("confidence-b");
-    const reasonsA = document.getElementById("reasons-a");
-    const reasonsB = document.getElementById("reasons-b");
+    badgeA.classList.add("hidden");
+    badgeB.classList.add("hidden");
 
-    // DOM Elements - Chatbot
-    const chatMessages = document.getElementById("chat-messages");
-    const chatInput = document.getElementById("chat-input");
-    const btnChatSend = document.getElementById("btn-chat-send");
-    const chatStatusHint = document.getElementById("chat-status-hint");
-    const typingIndicator = document.getElementById("typing-indicator");
-    const quickChipBtns = document.querySelectorAll(".quick-chip-btn");
+    if (data.safer === "a") badgeA.classList.remove("hidden");
+    else if (data.safer === "b") badgeB.classList.remove("hidden");
 
-    // DOM Elements - History Table
-    const scansTableBody = document.getElementById("scans-table-body");
+    renderCompareCard("a", data.a);
+    renderCompareCard("b", data.b);
 
-    // =========================================================================
-    // TAB NAVIGATION
-    // =========================================================================
-    tabBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            tabBtns.forEach(b => {
-                b.classList.remove("active");
-                b.setAttribute("aria-selected", "false");
-            });
-            Object.values(tabPanels).forEach(panel => {
-                panel.classList.add("hidden");
-                panel.classList.remove("active");
-            });
+    enableChat(data.a);
+    compareResultContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 
-            btn.classList.add("active");
-            btn.setAttribute("aria-selected", "true");
-            const activePanel = tabPanels[btn.id];
-            if (activePanel) {
-                activePanel.classList.remove("hidden");
-                activePanel.classList.add("active");
-            }
-            clearAllErrors();
-        });
-    });
+  function renderCompareCard(slot, cardData) {
+    const vTitle = document.getElementById(`verdict-title-${slot}`);
+    const vIcon = document.getElementById(`verdict-icon-${slot}`);
+    const isPhishing = cardData.result === "phishing";
 
-    // =========================================================================
-    // INPUT HELPERS (Paste, Clear, Typing)
-    // =========================================================================
-    urlInput.addEventListener("input", () => {
-        if (urlInput.value.trim().length > 0) {
-            btnClear.classList.remove("hidden");
-        } else {
-            btnClear.classList.add("hidden");
-        }
-        hideError(singleError);
-    });
+    vTitle.textContent = isPhishing ? "Looks like phishing" : "Looks safe";
+    vTitle.className = `verdict-title ${isPhishing ? 'verdict-phishing' : 'verdict-safe'}`;
 
-    btnClear.addEventListener("click", () => {
-        urlInput.value = "";
-        btnClear.classList.add("hidden");
-        urlInput.focus();
-        hideError(singleError);
-    });
+    vIcon.innerHTML = isPhishing
+      ? `<svg viewBox="0 0 24 24" width="22" height="22" fill="#9B3030"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="22" height="22" fill="#7F9468"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
 
-    btnPaste.addEventListener("click", async () => {
-        try {
-            const clipText = await navigator.clipboard.readText();
-            if (clipText) {
-                urlInput.value = clipText.trim();
-                btnClear.classList.remove("hidden");
-                hideError(singleError);
-            }
-        } catch {
-            showError(singleError, "Clipboard access was denied. Please paste manually.");
-        }
-    });
+    document.getElementById(`url-display-${slot}`).textContent = cardData.url;
+    document.getElementById(`score-${slot}`).textContent = cardData.safety_score;
+    document.getElementById(`confidence-${slot}`).textContent = `Confidence: ${(cardData.confidence * 100).toFixed(1)}%`;
 
-    // =========================================================================
-    // SCREENSHOT UPLOAD & DRAG/DROP
-    // =========================================================================
-    btnBrowseFile.addEventListener("click", () => screenshotFileInput.click());
-    dropzone.addEventListener("click", (e) => {
-        if (e.target !== btnRemoveFile && !selectedScreenshotFile) {
-            screenshotFileInput.click();
-        }
-    });
-
-    ["dragenter", "dragover"].forEach(evtName => {
-        dropzone.addEventListener(evtName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropzone.classList.add("dragover");
-        });
-    });
-
-    ["dragleave", "drop"].forEach(evtName => {
-        dropzone.addEventListener(evtName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropzone.classList.remove("dragover");
-        });
-    });
-
-    dropzone.addEventListener("drop", (e) => {
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-            handleSelectedFile(files[0]);
-        }
-    });
-
-    screenshotFileInput.addEventListener("change", (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            handleSelectedFile(e.target.files[0]);
-        }
-    });
-
-    function handleSelectedFile(file) {
-        hideError(screenshotError);
-        const validTypes = ["image/png", "image/jpeg", "image/webp"];
-        if (!validTypes.includes(file.type)) {
-            showError(screenshotError, "Only PNG, JPG, or WEBP images are supported.");
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            showError(screenshotError, "Image exceeds the 5 MB limit. Please choose a smaller file.");
-            return;
-        }
-
-        selectedScreenshotFile = file;
-        previewFilename.textContent = file.name;
-
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            previewImage.src = evt.target.result;
-            dropzoneEmpty.classList.add("hidden");
-            dropzonePreview.classList.remove("hidden");
-            btnScanScreenshot.disabled = false;
-        };
-        reader.readAsDataURL(file);
+    const rList = document.getElementById(`reasons-${slot}`);
+    rList.innerHTML = "";
+    if (cardData.reasons) {
+      cardData.reasons.forEach(r => {
+        const li = document.createElement("li");
+        li.className = "reason-item";
+        li.textContent = r;
+        rList.appendChild(li);
+      });
     }
+  }
 
-    btnRemoveFile.addEventListener("click", (e) => {
-        e.stopPropagation();
-        resetScreenshotDropzone();
-    });
+  /**
+   * Screenshot OCR Scan handler
+   */
+  async function handleScreenshotScan() {
+    if (!selectedScreenshotFile) return;
+    screenshotError.classList.add("hidden");
+    showRadar();
 
-    function resetScreenshotDropzone() {
-        selectedScreenshotFile = null;
-        screenshotFileInput.value = "";
-        previewImage.src = "";
-        previewFilename.textContent = "";
-        dropzonePreview.classList.add("hidden");
-        dropzoneEmpty.classList.remove("hidden");
-        btnScanScreenshot.disabled = true;
-        hideError(screenshotError);
-    }
+    const formData = new FormData();
+    formData.append("image", selectedScreenshotFile);
 
-    // =========================================================================
-    // ERROR DISPLAY UTILITIES
-    // =========================================================================
-    function showError(el, message) {
-        el.textContent = message;
-        el.classList.remove("hidden");
-        // Re-trigger shake animation
-        el.style.animation = "none";
-        void el.offsetWidth;
-        el.style.animation = "shakeErr 0.35s ease";
-    }
+    const startTime = Date.now();
+    try {
+      const res = await fetch("/scan-image", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      const elapsed = Date.now() - startTime;
+      const delay = Math.max(0, 1500 - elapsed);
 
-    function hideError(el) {
-        el.textContent = "";
-        el.classList.add("hidden");
-    }
-
-    function clearAllErrors() {
-        hideError(singleError);
-        hideError(compareError);
-        hideError(screenshotError);
-    }
-
-    // =========================================================================
-    // ANIMATED SCORE RING COUNT-UP
-    // =========================================================================
-    function animateScoreRing(targetScore, isPhishing) {
-        const radius = 50;
-        const circumference = 2 * Math.PI * radius; // ~314.16
-        ringFill.style.strokeDasharray = `${circumference}`;
-
-        let currentVal = 0;
-        const duration = 1200; // ms
-        const startTime = performance.now();
-
-        function updateCount(time) {
-            const elapsed = time - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            // Ease out cubic
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            currentVal = Math.round(easeOut * targetScore);
-            scoreText.textContent = currentVal;
-
-            const offset = circumference - (currentVal / 100) * circumference;
-            ringFill.style.strokeDashoffset = `${offset}`;
-
-            if (progress < 1) {
-                requestAnimationFrame(updateCount);
-            } else {
-                scoreText.textContent = targetScore;
-            }
+      setTimeout(() => {
+        hideRadar();
+        if (!res.ok) {
+          showError(screenshotError, data.error || "Error analyzing image.");
+          return;
         }
-
-        requestAnimationFrame(updateCount);
-    }
-
-    // =========================================================================
-    // RENDER SINGLE SCAN RESULT
-    // =========================================================================
-    function renderSingleResult(data, isScreenshot = false) {
-        currentScan = data;
-        enableChatbot(data);
-
-        // Hide radar and compare view
-        scanningRadar.classList.add("hidden");
-        compareResultContainer.classList.add("hidden");
-        singleResultCard.classList.remove("hidden");
-
-        const isPhishing = data.result === "phishing";
-
-        // Setup card classes
-        singleResultCard.classList.remove("state-safe", "state-phishing");
-        singleResultCard.classList.add(isPhishing ? "state-phishing" : "state-safe");
-
-        // Set verdict text and icon
-        if (isPhishing) {
-            verdictIcon.textContent = "⚠️";
-            verdictTitle.textContent = "Looks like phishing";
-        } else {
-            verdictIcon.textContent = "🛡️";
-            verdictTitle.textContent = "Looks safe";
-        }
-
-        scannedUrlDisplay.textContent = data.url;
-        confidenceDisplay.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
-
-        // Animate circular ring
-        animateScoreRing(data.safety_score, isPhishing);
-
-        // Populate reasons list safely
-        reasonsList.innerHTML = "";
-        (data.reasons || []).forEach(r => {
-            const li = document.createElement("li");
-            li.textContent = r;
-            reasonsList.appendChild(li);
-        });
-
-        // Did you mean / typo suggestions
-        if (data.suggestions && data.suggestions.length > 0) {
-            suggestionsChips.innerHTML = "";
-            data.suggestions.forEach(dom => {
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.className = "chip-btn";
-                btn.textContent = dom;
-                btn.title = `Scan ${dom} instead`;
-                btn.addEventListener("click", () => {
-                    urlInput.value = dom;
-                    tabBtns[0].click();
-                    handleSingleScan();
-                });
-                suggestionsChips.appendChild(btn);
-            });
-            didYouMeanCard.classList.remove("hidden");
-        } else {
-            didYouMeanCard.classList.add("hidden");
-        }
-
-        // Summary Card
-        summaryBulletsList.innerHTML = "";
-        summaryNoteText.classList.add("hidden");
-
-        if (data.summary && data.summary.points) {
-            summaryCategoryChip.textContent = data.summary.category || "Website";
-            data.summary.points.forEach(pt => {
-                const li = document.createElement("li");
-                li.textContent = pt;
-                summaryBulletsList.appendChild(li);
-            });
-            websiteSummaryCard.classList.remove("hidden");
-        } else if (data.summary_note) {
-            summaryCategoryChip.textContent = isPhishing ? "Blocked" : "Note";
-            summaryNoteText.textContent = data.summary_note;
-            summaryNoteText.classList.remove("hidden");
-            websiteSummaryCard.classList.remove("hidden");
-        } else {
-            websiteSummaryCard.classList.add("hidden");
-        }
-
-        // Screenshot disclaimer note
-        if (isScreenshot || data.note) {
-            screenshotDisclaimerNote.textContent = data.note || "Image analysis is a best guess. Always check the address bar.";
-            screenshotDisclaimerNote.classList.remove("hidden");
-        } else {
-            screenshotDisclaimerNote.classList.add("hidden");
-        }
-
-        // Scroll into view smoothly
-        resultsSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        renderSingleResult(data, true);
         loadHistory();
+      }, delay);
+    } catch (err) {
+      hideRadar();
+      showError(screenshotError, "Can't reach the server. Try again.");
     }
+  }
 
-    // =========================================================================
-    // RENDER COMPARE RESULT
-    // =========================================================================
-    function renderCompareResult(data) {
-        currentScan = data.a;
-        enableChatbot(data.a);
+  /**
+   * Chatbot functionality
+   */
+  const chatInput = document.getElementById("chat-input");
+  const btnChatSend = document.getElementById("btn-chat-send");
+  const chatMessages = document.getElementById("chat-messages");
+  const typingIndicator = document.getElementById("typing-indicator");
+  const chatStatusHint = document.getElementById("chat-status-hint");
 
-        scanningRadar.classList.add("hidden");
-        singleResultCard.classList.add("hidden");
-        compareResultContainer.classList.remove("hidden");
+  function enableChat(scanData) {
+    currentScan = scanData;
+    chatInput.disabled = false;
+    btnChatSend.disabled = false;
+    chatStatusHint.textContent = `Asking about: ${scanData.url}`;
+  }
 
-        // Banner if neither site is safe
-        if (data.note && data.note.length > 0) {
-            compareBanner.textContent = data.note;
-            compareBanner.classList.remove("hidden");
-        } else {
-            compareBanner.classList.add("hidden");
-        }
+  async function handleSendChat(customQuery = null) {
+    const question = customQuery || chatInput.value.trim();
+    if (!question) return;
 
-        // Safer choice badges
-        badgeA.classList.add("hidden");
-        badgeB.classList.add("hidden");
-        if (data.safer === "a") {
-            badgeA.classList.remove("hidden");
-        } else if (data.safer === "b") {
-            badgeB.classList.remove("hidden");
-        }
+    appendMessage(question, "user");
+    if (!customQuery) chatInput.value = "";
+    typingIndicator.classList.remove("hidden");
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        renderCardSide(compareCardA, data.a, verdictIconA, verdictTitleA, urlDisplayA, scoreA, confidenceA, reasonsA, data.safer === "similar");
-        renderCardSide(compareCardB, data.b, verdictIconB, verdictTitleB, urlDisplayB, scoreB, confidenceB, reasonsB, data.safer === "similar");
-
-        resultsSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        loadHistory();
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, scan: currentScan })
+      });
+      const data = await res.json();
+      typingIndicator.classList.add("hidden");
+      appendMessage(data.answer || "No response received.", "bot");
+    } catch (err) {
+      typingIndicator.classList.add("hidden");
+      appendMessage("Can't reach the server. Try again.", "bot");
     }
+  }
+  window.handleSendChat = handleSendChat;
 
-    function renderCardSide(card, item, iconEl, titleEl, urlEl, scoreEl, confEl, reasonsEl, isSimilar) {
-        card.classList.remove("state-safe", "state-phishing", "state-similar");
-        const isPhishing = item.result === "phishing";
+  function appendMessage(text, sender) {
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble ${sender}-bubble`;
+    bubble.textContent = text;
+    chatMessages.appendChild(bubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
 
-        if (isSimilar) {
-            card.classList.add("state-similar");
-            iconEl.textContent = "⚖️";
-            titleEl.textContent = isPhishing ? "Looks like phishing" : "Looks safe";
-        } else if (isPhishing) {
-            card.classList.add("state-phishing");
-            iconEl.textContent = "⚠️";
-            titleEl.textContent = "Looks like phishing";
-        } else {
-            card.classList.add("state-safe");
-            iconEl.textContent = "🛡️";
-            titleEl.textContent = "Looks safe";
-        }
-
-        urlEl.textContent = item.url;
-        scoreEl.textContent = item.safety_score;
-        confEl.textContent = `Confidence: ${(item.confidence * 100).toFixed(1)}%`;
-
-        reasonsEl.innerHTML = "";
-        (item.reasons || []).forEach(r => {
-            const li = document.createElement("li");
-            li.textContent = r;
-            reasonsEl.appendChild(li);
-        });
-    }
-
-    // =========================================================================
-    // API CALLS (Single, Compare, Screenshot)
-    // =========================================================================
-    window.handleSingleScan = async function(isFast = false) {
-        const rawUrl = urlInput.value.trim();
-        if (!rawUrl) {
-            showError(singleError, "Enter a valid website address, like example.com");
-            return;
-        }
-
-        hideError(singleError);
-        startRadarSweep();
-
-        const delay = isFast ? 100 : 1500;
-        const minTimer = new Promise(resolve => setTimeout(resolve, delay));
-
-        try {
-            const responsePromise = fetch("/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: rawUrl }),
-            });
-
-            const [response] = await Promise.all([responsePromise, minTimer]);
-            const data = await response.json();
-
-            if (!response.ok) {
-                stopRadarSweep();
-                showError(singleError, data.error || "Please enter a valid website address");
-                return;
-            }
-
-            renderSingleResult(data, false);
-        } catch {
-            stopRadarSweep();
-            showError(singleError, "Can't reach the server. Try again.");
-        }
-    };
-
-    window.handleCompareScan = async function(isFast = false) {
-        const urlA = compareUrlA.value.trim();
-        const urlB = compareUrlB.value.trim();
-
-        if (!urlA || !urlB) {
-            showError(compareError, "Please enter two valid website addresses, like google.com and example.com");
-            return;
-        }
-
-        hideError(compareError);
-        startRadarSweep();
-
-        const delay = isFast ? 100 : 1500;
-        const minTimer = new Promise(resolve => setTimeout(resolve, delay));
-
-        try {
-            const responsePromise = fetch("/compare", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url_a: urlA, url_b: urlB }),
-            });
-
-            const [response] = await Promise.all([responsePromise, minTimer]);
-            const data = await response.json();
-
-            if (!response.ok) {
-                stopRadarSweep();
-                showError(compareError, data.error || "Please enter two valid website addresses");
-                return;
-            }
-
-            renderCompareResult(data);
-        } catch {
-            stopRadarSweep();
-            showError(compareError, "Can't reach the server. Try again.");
-        }
-    };
-
-    btnScanScreenshot.addEventListener("click", async () => {
-        if (!selectedScreenshotFile) {
-            showError(screenshotError, "Please choose an image file first.");
-            return;
-        }
-
-        hideError(screenshotError);
-        startRadarSweep();
-
-        const formData = new FormData();
-        formData.append("image", selectedScreenshotFile);
-
-        const minTimer = new Promise(resolve => setTimeout(resolve, 1500));
-
-        try {
-            const responsePromise = fetch("/scan-image", {
-                method: "POST",
-                body: formData,
-            });
-
-            const [response] = await Promise.all([responsePromise, minTimer]);
-            const data = await response.json();
-
-            if (!response.ok) {
-                stopRadarSweep();
-                showError(screenshotError, data.error || "Failed to analyze screenshot.");
-                return;
-            }
-
-            renderSingleResult(data, true);
-        } catch {
-            stopRadarSweep();
-            showError(screenshotError, "Can't reach the server. Try again.");
-        }
+  document.querySelectorAll(".quick-chip-btn").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const q = chip.getAttribute("data-query");
+      if (q) handleSendChat(q);
     });
+  });
 
-    function startRadarSweep() {
-        singleResultCard.classList.add("hidden");
-        compareResultContainer.classList.add("hidden");
-        scanningRadar.classList.remove("hidden");
-        resultsSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  /**
+   * Recent Scans Table loader
+   */
+  async function loadHistory() {
+    const tbody = document.getElementById("scans-table-body");
+    try {
+      const res = await fetch("/history");
+      if (!res.ok) return;
+      const data = await res.json();
+      tbody.innerHTML = "";
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="4">No scans recorded yet. Enter a link above to get started.</td></tr>`;
+        return;
+      }
+      data.forEach(scan => {
+        const tr = document.createElement("tr");
+        const isPhishing = scan.result === "phishing";
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(scan.url)}</strong></td>
+          <td><span class="table-badge ${isPhishing ? 'badge-phishing' : 'badge-safe'}">${isPhishing ? 'Phishing' : 'Safe'}</span></td>
+          <td>${scan.safety_score}/100</td>
+          <td>${formatDate(scan.created_at)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (e) {}
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+  }
+
+  function formatDate(isoStr) {
+    if (!isoStr) return "";
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return isoStr;
     }
+  }
 
-    function stopRadarSweep() {
-        scanningRadar.classList.add("hidden");
+  // Back to top button listener
+  const backToTopBtn = document.getElementById("back-to-top");
+  window.addEventListener("scroll", () => {
+    if (backToTopBtn) {
+      if (window.scrollY > window.innerHeight * 0.7) {
+        backToTopBtn.classList.remove("hidden");
+      } else {
+        backToTopBtn.classList.add("hidden");
+      }
     }
+  });
 
-    // =========================================================================
-    // CHATBOT INTERACTION
-    // =========================================================================
-    function enableChatbot(scan) {
-        chatInput.disabled = false;
-        btnChatSend.disabled = false;
-        quickChipBtns.forEach(btn => btn.disabled = false);
-        chatStatusHint.textContent = `Active Context: ${scan.url}`;
-
-        // Add friendly introduction message if clean
-        const msg = document.createElement("div");
-        msg.className = "chat-bubble bot-bubble";
-        msg.textContent = `I've analyzed ${scan.url}. Feel free to ask why it was flagged, if it is safe to open, or what steps to take.`;
-        chatMessages.appendChild(msg);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    quickChipBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const query = btn.getAttribute("data-query");
-            if (query && currentScan) {
-                sendChatMessage(query);
-            }
-        });
-    });
-
-    window.handleSendChat = function() {
-        const text = chatInput.value.trim();
-        if (!text || !currentScan) return;
-        sendChatMessage(text);
-        chatInput.value = "";
-    };
-
-    async function sendChatMessage(question) {
-        if (!currentScan) return;
-
-        // Render user message bubble safely
-        const userBubble = document.createElement("div");
-        userBubble.className = "chat-bubble user-bubble";
-        userBubble.textContent = question;
-        chatMessages.appendChild(userBubble);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        // Show typing indicator
-        typingIndicator.classList.remove("hidden");
-
-        try {
-            const response = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    question: question,
-                    scan: currentScan,
-                }),
-            });
-
-            const data = await response.json();
-            typingIndicator.classList.add("hidden");
-
-            const botBubble = document.createElement("div");
-            botBubble.className = "chat-bubble bot-bubble";
-            botBubble.textContent = data.answer || "I could not analyze that question. Please try asking about the scan safety.";
-            chatMessages.appendChild(botBubble);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        } catch {
-            typingIndicator.classList.add("hidden");
-            const errBubble = document.createElement("div");
-            errBubble.className = "chat-bubble bot-bubble";
-            errBubble.textContent = "Could not reach assistant. Please try again.";
-            chatMessages.appendChild(errBubble);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+  // Reveal on scroll observer
+  const reveals = document.querySelectorAll(".reveal-on-scroll");
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
         }
-    }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => observer.observe(el));
+  } else {
+    reveals.forEach(el => el.classList.add("is-visible"));
+  }
 
-    // =========================================================================
-    // RECENT SCANS TABLE
-    // =========================================================================
-    async function loadHistory() {
-        try {
-            const res = await fetch("/history");
-            if (!res.ok) return;
-            const scans = await res.json();
-
-            scansTableBody.innerHTML = "";
-            if (!scans || scans.length === 0) {
-                const tr = document.createElement("tr");
-                tr.className = "empty-row";
-                const td = document.createElement("td");
-                td.colSpan = 4;
-                td.textContent = "No recent scans yet. Scan a URL above!";
-                tr.appendChild(td);
-                scansTableBody.appendChild(tr);
-                return;
-            }
-
-            scans.forEach(s => {
-                const tr = document.createElement("tr");
-
-                // URL cell
-                const tdUrl = document.createElement("td");
-                const spanUrl = document.createElement("span");
-                spanUrl.className = "table-url";
-                spanUrl.textContent = s.url;
-                spanUrl.title = s.url;
-                tdUrl.appendChild(spanUrl);
-
-                // Verdict cell
-                const tdVerdict = document.createElement("td");
-                const badge = document.createElement("span");
-                const isSafe = s.result === "safe";
-                badge.className = `badge-verdict ${isSafe ? "badge-safe" : "badge-phishing"}`;
-                badge.textContent = isSafe ? "✓ Safe" : "⚠️ Phishing";
-                tdVerdict.appendChild(badge);
-
-                // Score cell
-                const tdScore = document.createElement("td");
-                tdScore.textContent = `${s.safety_score}/100`;
-
-                // Time cell
-                const tdTime = document.createElement("td");
-                tdTime.textContent = s.created_at || "Recent";
-
-                tr.appendChild(tdUrl);
-                tr.appendChild(tdVerdict);
-                tr.appendChild(tdScore);
-                tr.appendChild(tdTime);
-
-                scansTableBody.appendChild(tr);
-            });
-        } catch {
-            // Silently fallback on failure
-        }
-    }
-
-    // Initial load of history
-    loadHistory();
-
-    // Check for automated testing / demonstration query parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const testMode = urlParams.get("test");
-    const isFast = urlParams.get("fast") === "1";
-
-    if (testMode === "safe") {
-        urlInput.value = "https://google.com";
-        btnClear.classList.remove("hidden");
-        handleSingleScan(isFast);
-    } else if (testMode === "phishing") {
-        urlInput.value = "http://paypal.com-login-verify.secure-update.tk:8080/account";
-        btnClear.classList.remove("hidden");
-        handleSingleScan(isFast);
-    } else if (testMode === "compare") {
-        tabBtns[1].click();
-        compareUrlA.value = "google.com";
-        compareUrlB.value = "http://fake-bank-login.com";
-        handleCompareScan(isFast);
-    } else if (testMode === "chat") {
-        urlInput.value = "http://paypal.com-login-verify.secure-update.tk:8080/account";
-        btnClear.classList.remove("hidden");
-        handleSingleScan(true);
-        setTimeout(() => {
-            sendChatMessage("Why was this flagged?");
-        }, 500);
-    }
+  // Load history on boot
+  loadHistory();
 });
