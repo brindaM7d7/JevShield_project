@@ -3,9 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="JevShield - Responsive, AI-powered phishing link and website safety detection system. Check links before you click.">
     <title>JevShield: check a link before you click it</title>
+    <!-- Inline SVG Shield Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237F9468'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z'/%3E%3C/svg%3E">
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>JevShield Backend Active</h1>
+    <!-- Background Ambient Glow Drift -->
+    <div class="ambient-glow" aria-hidden="true"></div>
+
+    <div class="page-container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-shield" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                    </svg>
+                </div>
+                <h1 class="logo-title">Jev<span>Shield</span></h1>
+            </div>
+            <div class="header-status" aria-label="System status">
+                <span class="status-dot"></span> Active Protection
+            </div>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section class="hero reveal-hero">
+            <h2 class="hero-headline">Check a link before you click it.</h2>
+            <p class="hero-subtext">Instant, AI-powered URL threat analysis and verification to keep your browsing secure.</p>
+        </section>
+
+        <!-- SCANNER PANEL WITH TABS -->
+        <main class="scanner-panel reveal-panel">
+            <nav class="tabs-nav" role="tablist" aria-label="Scanner modes">
+                <button class="tab-btn active" role="tab" id="tab-btn-single" aria-selected="true" aria-controls="tab-single">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Check a link
+                </button>
+                <button class="tab-btn" role="tab" id="tab-btn-compare" aria-selected="false" aria-controls="tab-compare">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+                    Compare two links
+                </button>
+                <button class="tab-btn" role="tab" id="tab-btn-screenshot" aria-selected="false" aria-controls="tab-screenshot">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    Upload screenshot
+                </button>
+            </nav>
+
+            <!-- TAB 1: CHECK A LINK -->
+            <div class="tab-content active" id="tab-single" role="tabpanel" aria-labelledby="tab-btn-single">
+                <form id="form-single" class="input-form" onsubmit="event.preventDefault(); handleSingleScan();">
+                    <label for="url-input" class="sr-only">Enter website address</label>
+                    <div class="input-group">
+                        <div class="input-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        </div>
+                        <input type="text" id="url-input" class="url-input" placeholder="Paste link here (e.g. example.com)" autocomplete="off" spellcheck="false" required>
+                        <button type="button" id="btn-paste" class="btn-input-action" title="Paste from clipboard" aria-label="Paste URL">Paste</button>
+                        <button type="button" id="btn-clear" class="btn-input-action btn-clear hidden" title="Clear input" aria-label="Clear URL">&times;</button>
+                        <button type="submit" id="btn-scan" class="btn-primary">
+                            <span>Scan</span>
+                        </button>
+                    </div>
+                    <div id="single-error" class="input-error hidden" role="alert"></div>
+                </form>
+            </div>
+
+            <!-- TAB 2: COMPARE TWO LINKS -->
+            <div class="tab-content hidden" id="tab-compare" role="tabpanel" aria-labelledby="tab-btn-compare">
+                <form id="form-compare" class="input-form" onsubmit="event.preventDefault(); handleCompareScan();">
+                    <div class="compare-inputs-grid">
+                        <div class="input-group">
+                            <input type="text" id="compare-url-a" class="url-input" placeholder="First link (e.g. google.com)" autocomplete="off" spellcheck="false" required>
+                        </div>
+                        <div class="compare-vs" aria-hidden="true">VS</div>
+                        <div class="input-group">
+                            <input type="text" id="compare-url-b" class="url-input" placeholder="Second link (e.g. gooogle.com)" autocomplete="off" spellcheck="false" required>
+                        </div>
+                    </div>
+                    <div class="compare-actions">
+                        <button type="submit" id="btn-compare" class="btn-primary">
+                            <span>Compare</span>
+                        </button>
+                    </div>
+                    <div id="compare-error" class="input-error hidden" role="alert"></div>
+                </form>
+            </div>
+
+            <!-- TAB 3: UPLOAD SCREENSHOT -->
+            <div class="tab-content hidden" id="tab-screenshot" role="tabpanel" aria-labelledby="tab-btn-screenshot">
+                <div class="screenshot-dropzone" id="dropzone" tabindex="0" role="region" aria-label="Screenshot upload area">
+                    <input type="file" id="screenshot-file" class="sr-only" accept="image/png, image/jpeg, image/webp" capture="environment">
+                    <div id="dropzone-empty" class="dropzone-content">
+                        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" class="dropzone-icon">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p class="dropzone-title">Drag and drop a screenshot here, or <button type="button" id="btn-browse-file" class="btn-link">choose file</button></p>
+                        <p class="dropzone-limits">PNG, JPG, or WEBP up to 5 MB</p>
+                    </div>
+                    <div id="dropzone-preview" class="dropzone-preview hidden">
+                        <img id="preview-image" alt="Uploaded screenshot preview" src="">
+                        <div class="preview-overlay">
+                            <span id="preview-filename" class="preview-filename"></span>
+                            <button type="button" id="btn-remove-file" class="btn-secondary btn-sm" aria-label="Remove image">Remove</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="screenshot-hints">
+                    <p class="hint-item"><span class="hint-bullet">&bull;</span> Include the address bar for better results.</p>
+                    <p class="hint-item"><span class="hint-bullet">&bull;</span> Don't upload screenshots containing passwords or personal information.</p>
+                </div>
+                <div class="screenshot-actions">
+                    <button type="button" id="btn-scan-screenshot" class="btn-primary" disabled>
+                        <span>Scan Screenshot</span>
+                    </button>
+                </div>
+                <div id="screenshot-error" class="input-error hidden" role="alert"></div>
+            </div>
+        </main>
+
+        <!-- RESULTS SECTION -->
+        <section class="results-section" id="results-section" aria-live="polite">
+            <!-- Scanning radar animation state -->
+            <div id="scanning-radar" class="radar-container hidden" role="status">
+                <div class="radar-pulse">
+                    <div class="radar-sweep"></div>
+                </div>
+                <p class="radar-text">Analyzing the link...</p>
+            </div>
+
+            <!-- Single Result Card -->
+            <div id="single-result-card" class="result-card hidden">
+                <div class="result-header">
+                    <div class="score-ring-wrapper">
+                        <svg class="score-ring" viewBox="0 0 120 120" width="100" height="100">
+                            <circle class="score-ring-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="score-ring-fill" id="ring-fill" cx="60" cy="60" r="50"></circle>
+                        </svg>
+                        <div class="score-ring-center">
+                            <span class="score-number" id="score-text">0</span>
+                            <span class="score-label">Safety</span>
+                        </div>
+                    </div>
+                    <div class="result-summary">
+                        <div class="verdict-line">
+                            <span class="verdict-icon" id="verdict-icon" aria-hidden="true"></span>
+                            <h3 class="verdict-title" id="verdict-title">Evaluating...</h3>
+                        </div>
+                        <p class="scanned-url" id="scanned-url-display"></p>
+                        <p class="confidence-text" id="confidence-display">Confidence: --</p>
+                    </div>
+                </div>
+
+                <!-- Reasons list -->
+                <div class="reasons-block">
+                    <h4 class="section-subtitle">Security Analysis:</h4>
+                    <ul class="reasons-list" id="reasons-list"></ul>
+                </div>
+
+                <!-- Did you mean / typo suggestions card -->
+                <div id="did-you-mean-card" class="suggestions-card hidden">
+                    <div class="suggestions-header">
+                        <span class="warning-icon" aria-hidden="true">⚠️</span>
+                        <strong>Did you mean:</strong>
+                    </div>
+                    <div class="chips-list" id="suggestions-chips"></div>
+                </div>
+
+                <!-- Website Summary card -->
+                <div id="website-summary-card" class="summary-card hidden">
+                    <div class="summary-card-header">
+                        <h4 class="section-subtitle">About this website</h4>
+                        <span class="category-chip" id="summary-category-chip">Website</span>
+                    </div>
+                    <ul class="summary-bullets" id="summary-bullets-list"></ul>
+                    <p class="summary-note secondary-text hidden" id="summary-note-text"></p>
+                </div>
+
+                <!-- Screenshot Note -->
+                <p id="screenshot-disclaimer-note" class="screenshot-note hidden">
+                    Image analysis is a best guess. Always check the address bar.
+                </p>
+            </div>
+
+            <!-- Compare Result Cards -->
+            <div id="compare-result-container" class="compare-container hidden">
+                <div id="compare-banner" class="compare-banner hidden" role="alert">
+                    Neither website looks safe.
+                </div>
+                <div class="compare-cards-grid">
+                    <!-- Card A -->
+                    <div class="compare-card" id="compare-card-a">
+                        <div class="safer-badge hidden" id="badge-a">Safer choice</div>
+                        <div class="compare-header">
+                            <span class="verdict-icon" id="verdict-icon-a"></span>
+                            <h4 class="verdict-title" id="verdict-title-a">Link A</h4>
+                        </div>
+                        <p class="scanned-url" id="url-display-a"></p>
+                        <div class="compare-score-box">
+                            <span class="compare-score-num" id="score-a">0</span>
+                            <span class="compare-score-lbl">Safety Score</span>
+                        </div>
+                        <p class="confidence-text" id="confidence-a"></p>
+                        <ul class="reasons-list" id="reasons-a"></ul>
+                    </div>
+                    <!-- Card B -->
+                    <div class="compare-card" id="compare-card-b">
+                        <div class="safer-badge hidden" id="badge-b">Safer choice</div>
+                        <div class="compare-header">
+                            <span class="verdict-icon" id="verdict-icon-b"></span>
+                            <h4 class="verdict-title" id="verdict-title-b">Link B</h4>
+                        </div>
+                        <p class="scanned-url" id="url-display-b"></p>
+                        <div class="compare-score-box">
+                            <span class="compare-score-num" id="score-b">0</span>
+                            <span class="compare-score-lbl">Safety Score</span>
+                        </div>
+                        <p class="confidence-text" id="confidence-b"></p>
+                        <ul class="reasons-list" id="reasons-b"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHATBOT PANEL -->
+        <section class="chatbot-panel" id="chatbot-section">
+            <div class="chat-header">
+                <div class="chat-title-group">
+                    <div class="bot-avatar" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"/>
+                        </svg>
+                    </div>
+                    <h3 class="chat-title">Ask JevShield</h3>
+                </div>
+                <span class="chat-hint" id="chat-status-hint">Scan a link to ask questions</span>
+            </div>
+
+            <!-- Messages stream -->
+            <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
+                <div class="chat-bubble bot-bubble">
+                    Hello! Once you scan or compare a link, you can ask me why it was flagged, whether it is safe to open, or what steps you should take.
+                </div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div class="typing-indicator hidden" id="typing-indicator" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </div>
+
+            <!-- Quick questions buttons -->
+            <div class="quick-chips" id="quick-chips">
+                <button type="button" class="quick-chip-btn" data-query="Why was this flagged?">Why was this flagged?</button>
+                <button type="button" class="quick-chip-btn" data-query="Is it safe to open?">Is it safe to open?</button>
+                <button type="button" class="quick-chip-btn" data-query="What should I do now?">What should I do now?</button>
+            </div>
+
+            <!-- Chat input form -->
+            <form id="chat-form" class="chat-form" onsubmit="event.preventDefault(); handleSendChat();">
+                <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about this scan..." maxlength="300" autocomplete="off" disabled>
+                <button type="submit" id="btn-chat-send" class="btn-primary btn-send" disabled aria-label="Send question">
+                    <span>Send</span>
+                </button>
+            </form>
+            <p class="chat-disclaimer">Explanations are AI-generated.</p>
+        </section>
+
+        <!-- RECENT SCANS TABLE -->
+        <section class="recent-scans-section">
+            <h3 class="section-title">Recent Scans</h3>
+            <div class="table-container">
+                <table class="scans-table" id="scans-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Website</th>
+                            <th scope="col">Verdict</th>
+                            <th scope="col">Safety Score</th>
+                            <th scope="col">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scans-table-body">
+                        <tr class="empty-row"><td colspan="4">Loading scan history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section class="how-it-works">
+            <h3 class="section-title">How JevShield Works</h3>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number" aria-hidden="true">1</div>
+                    <h4 class="step-title">Enter a Link</h4>
+                    <p class="step-desc">Paste any URL or upload a screenshot. Our input sanitizer checks syntax, scheme, and format.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number" aria-hidden="true">2</div>
+                    <h4 class="step-title">AI & Lexical Analysis</h4>
+                    <p class="step-desc">JevShield extracts 20 lexical signals and character n-grams to detect phishing patterns, typosquats, and threats.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number" aria-hidden="true">3</div>
+                    <h4 class="step-title">Get a Clear Answer</h4>
+                    <p class="step-desc">Receive an instant safety score from 0 to 100, plain-English reasons, website summary, and assistant advice.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <p class="footer-disclaimer">Results are estimates, not guarantees.</p>
+            <p class="footer-copy">&copy; 2026 JevShield Phishing Detection Platform. Built for defense.</p>
+        </footer>
+    </div>
+
+    <!-- Frontend Script -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
