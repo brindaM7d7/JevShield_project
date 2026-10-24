@@ -6,7 +6,7 @@
   <meta name="description" content="JevShield - Responsive, AI-powered phishing link and website safety detection system. Check links before you click.">
   <title>JevShield: check a link before you click it</title>
 
-  <!-- Inline SVG Shield Favicon -->
+  <!-- Inline SVG Shield Favicon in Cyan -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2379dce8'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z'/%3E%3C/svg%3E">
 
   <!-- Google Fonts: Prata 400, Hanken Grotesk 400/500/600/700, Poppins 500/600 -->
@@ -28,597 +28,453 @@
 </head>
 <body>
 
-  <!-- =========================================================================
-       1. HERO SECTION (SpaceEdu Cinematic Planet Hero with JevShield Overrides)
-       ========================================================================= -->
-  <div class="stage" id="top">
-    <!-- Looping video backdrop -->
+  <!-- FIXED FULL-VIEWPORT STAGE (The Document Never Scrolls) -->
+  <div class="stage" id="stage">
+
+    <!-- 1. SPACE BACKDROP (Single .sky layer behind all screens) -->
     <div class="sky" aria-hidden="true">
       <video data-planet="earth" class="is-active" autoplay muted loop playsinline preload="auto" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_3ffb4889-c520-432d-8458-038009eb40df.mp4" poster="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png"></video>
       <video data-planet="venus" muted loop playsinline preload="none" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_b211cd74-013b-4dd3-bfd0-64491d8696fa.mp4" poster="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_cf55d1d8-7b59-4a64-80da-d72052ae974e.png"></video>
       <video data-planet="mars" muted loop playsinline preload="none" data-src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_51eae59a-2459-4c84-907c-cc5edfe5fea7.mp4" poster="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_0ba6de7c-285d-43dc-b7ab-8c54c73707cb.png"></video>
     </div>
 
-    <!-- UI Overlay Layer -->
-    <div class="ui">
-      <!-- Navbar -->
-      <header class="navbar">
-        <div class="navrow">
-          <a class="logo" href="#top">jev<i>shield</i></a>
-          <nav class="links" id="site-nav">
-            <a href="#scanner" aria-current="page" data-mode="single">Scanner</a>
-            <a href="#scanner" data-mode="compare">Compare</a>
-            <a href="#scanner" data-mode="image">Screenshot</a>
-            <a href="#chat">Ask AI</a>
-            <a class="enroll" href="#scanner" id="nav-get-started">Get started</a>
-          </nav>
-          <button class="burger" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
-            <span></span><span></span><span></span>
-          </button>
-        </div>
-      </header>
+    <!-- 2. VEIL OVERLAY (Fades in over sky on tool screens for glass readability) -->
+    <div class="veil" id="veil" aria-hidden="true"></div>
 
-      <!-- Center Hero Content -->
-      <div class="copy">
-        <div class="col eyebrow"><span class="ent-mask"><span class="ent-line">CHECK A LINK</span></span></div>
-        <h1 class="col title"><span class="ent-mask"><span class="ent-line">JEVSHIELD</span></span></h1>
-        <div class="col rule"><span></span></div>
-        <p class="col lede">Paste any web address and get a clear verdict in seconds. Our trained model checks <br>the link, explains every warning sign, and suggests the real site if it spots a typo.</p>
-        <div class="col cta">
-          <button class="planet planet-l" type="button" data-slot="l" aria-label="Switch to compare mode">
-            <img data-planet="earth" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
-            <img data-planet="venus" class="is-shown" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202012_640b239a-d08a-4200-adb2-741bbe129ac8.png">
-            <img data-planet="mars" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202018_3d559490-f613-4ed7-a3bb-3b7e9fc90fb8.png">
-          </button>
-          <button class="planet planet-r" type="button" data-slot="r" aria-label="Switch to image mode">
-            <img data-planet="earth" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
-            <img data-planet="venus" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202012_640b239a-d08a-4200-adb2-741bbe129ac8.png">
-            <img data-planet="mars" class="is-shown" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202018_3d559490-f613-4ed7-a3bb-3b7e9fc90fb8.png">
-          </button>
-          <a href="#scanner" class="btn-get-started" id="hero-get-started">GET STARTED</a>
-          <span class="label label-l">COMPARE</span>
-          <span class="label label-r">IMAGE</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Scroll down indicator -->
-    <button class="scroll" type="button" aria-label="Scroll to scanner" id="scroll-to-scanner">
-      <svg viewBox="0 0 26 33" fill="none" aria-hidden="true">
-        <path d="M13 1.5 V31.5 M1.9 20.4 L13 31.5 L24.1 20.4" stroke="#ffffff" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- =========================================================================
-       PAGE CONTENT BELOW HERO (MOSTLY WHITE SECTION)
-       ========================================================================= -->
-  <div class="page-container">
-
-    <!-- 2. SCANNER SECTION (#scanner) -->
-    <section class="section-scanner reveal-on-scroll" id="scanner">
-      <div class="scanner-header-block">
-        <h2 class="section-heading">Check a link before you click it</h2>
-        <p class="section-intro">Instant, AI-powered URL threat analysis and verification to keep your browsing secure.</p>
-      </div>
-
-      <!-- Mode selection tabs -->
-      <main class="scanner-panel">
-        <nav class="tabs-nav" role="tablist" aria-label="Scanner modes">
-          <button class="tab-btn active" role="tab" id="tab-btn-single" aria-selected="true" aria-controls="tab-single">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Check a link
-          </button>
-          <button class="tab-btn" role="tab" id="tab-btn-compare" aria-selected="false" aria-controls="tab-compare">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
-            Compare two links
-          </button>
-          <button class="tab-btn" role="tab" id="tab-btn-screenshot" aria-selected="false" aria-controls="tab-screenshot">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-            Upload screenshot
-          </button>
+    <!-- 3. TOP NAVIGATION (Visible on every screen) -->
+    <header class="navbar" id="navbar">
+      <div class="navrow">
+        <a class="logo" href="#/home" data-screen="home" aria-label="JevShield Home">jev<i>shield</i></a>
+        <button class="burger" id="burger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <nav class="links" id="site-nav">
+          <a href="#/scanner" data-screen="scanner">Scanner</a>
+          <a href="#/compare" data-screen="compare">Compare</a>
+          <a href="#/screenshot" data-screen="screenshot">Screenshot</a>
+          <a href="#/chat" data-screen="chat">Ask AI</a>
+          <a href="#/history" data-screen="history">History</a>
+          <a href="#/how" data-screen="how">How it works</a>
+          <a class="enroll" href="#/scanner" id="nav-get-started" data-screen="get-started">Get started</a>
         </nav>
+      </div>
+    </header>
 
-        <!-- TAB 1: CHECK A LINK (SINGLE) -->
-        <div class="tab-content active" id="tab-single" role="tabpanel" aria-labelledby="tab-btn-single">
-          <form id="form-single" class="input-form" onsubmit="event.preventDefault(); handleSingleScan();">
-            <label for="url-input" class="sr-only">Enter website address</label>
-            <div class="input-group">
-              <div class="input-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              </div>
-              <input type="text" id="url-input" class="url-input" placeholder="Paste link here (e.g. paypal-security-login.com/auth or google.com)" autocomplete="off" spellcheck="false" required>
-              <button type="button" id="btn-paste" class="btn-input-action" title="Paste from clipboard" aria-label="Paste URL">Paste</button>
-              <button type="button" id="btn-clear" class="btn-input-action btn-clear hidden" title="Clear input" aria-label="Clear URL">&times;</button>
-              <button type="submit" id="btn-scan" class="btn-primary">
-                <span>Scan</span>
-              </button>
-            </div>
-            <div id="single-error" class="input-error hidden" role="alert"></div>
-          </form>
+    <!-- =========================================================================
+         SCREEN 1: HOME (Featured Planet SpaceEdu Hero)
+         ========================================================================= -->
+    <section class="screen screen-home is-active" id="screen-home" data-screen="home" aria-hidden="false">
+      <div class="copy">
+        <div class="col">
+          <div class="eyebrow" id="hero-eyebrow"><span class="ent-line">CHECK A LINK</span></div>
+          <h1 class="title">JEVSHIELD</h1>
+          <div class="rule" aria-hidden="true"></div>
+          <p class="lede" id="hero-lede">Paste any web address and get a clear verdict in seconds. Our trained model checks the link, explains every warning sign, and suggests the real site if it spots a typo.</p>
+          <div class="cta">
+            <button type="button" class="planet planet-l" id="btn-planet-l" aria-label="Switch to Venus - Side-by-side URL comparison">
+              <img data-planet="earth" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
+              <img data-planet="venus" class="is-shown" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202012_640b239a-d08a-4200-adb2-741bbe129ac8.png">
+              <img data-planet="mars" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202018_3d559490-f613-4ed7-a3bb-3b7e9fc90fb8.png">
+            </button>
+            <div class="label label-l" id="label-l" aria-hidden="true">COMPARE</div>
+
+            <button type="button" class="planet planet-r" id="btn-planet-r" aria-label="Switch to Mars - Webpage screenshot analysis">
+              <img data-planet="earth" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
+              <img data-planet="venus" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202012_640b239a-d08a-4200-adb2-741bbe129ac8.png">
+              <img data-planet="mars" class="is-shown" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202018_3d559490-f613-4ed7-a3bb-3b7e9fc90fb8.png">
+            </button>
+            <div class="label label-r" id="label-r" aria-hidden="true">IMAGE</div>
+
+            <a href="#/scanner" class="btn-get-started" id="hero-get-started">GET STARTED</a>
+          </div>
         </div>
+      </div>
+      <a href="#/scanner" class="scroll-arrow" id="hero-arrow-btn" aria-label="Open featured tool">
+        <svg viewBox="0 0 26 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 1.5 V31.5 M1.9 20.4 L13 31.5 L24.1 20.4" stroke="#ffffff" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+        </svg>
+      </a>
+    </section>
 
-        <!-- TAB 2: COMPARE TWO LINKS -->
-        <div class="tab-content hidden" id="tab-compare" role="tabpanel" aria-labelledby="tab-btn-compare">
-          <form id="form-compare" class="input-form" onsubmit="event.preventDefault(); handleCompareScan();">
+    <!-- =========================================================================
+         SCREEN 2: SCANNER (Earth Backdrop)
+         ========================================================================= -->
+    <section class="screen screen-tool" id="screen-scanner" data-screen="scanner" aria-hidden="true">
+      <div class="screen-header">
+        <div class="screen-eyebrow">CHECK A LINK</div>
+        <h2 class="screen-title" tabindex="-1">Is this link safe?</h2>
+        <div class="screen-rule" aria-hidden="true"></div>
+        <p class="screen-lede">Paste any web address to instantly detect phishing traps, domain spoofing, and security risks.</p>
+      </div>
+
+      <div class="tool-panel">
+        <div class="panel-scroll-area">
+          <!-- Big pill URL input box (collapses into compact bar after scan) -->
+          <div class="scanner-input-box" id="scanner-input-box">
+            <div class="input-group">
+              <span class="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              </span>
+              <input type="url" id="url-input" class="url-input" placeholder="Paste link here (e.g. paypal-security-login.com/auth or google.com)" autocomplete="off" spellcheck="false" aria-label="Web address to scan">
+              <button type="button" class="btn-input-action" id="btn-paste">Paste</button>
+              <button type="button" class="btn-input-action btn-clear" id="btn-clear" aria-label="Clear input">&times;</button>
+              <button type="button" class="btn-primary" id="btn-scan">Scan</button>
+            </div>
+            <div id="url-error" class="input-error hidden" role="alert"></div>
+
+            <!-- Ghost pill button shown when collapsed to scan another link -->
+            <div class="compact-reset-row hidden" id="compact-reset-row">
+              <span class="compact-url-label" id="compact-url-label"></span>
+              <button type="button" class="btn-ghost" id="btn-scan-another">Scan another link</button>
+            </div>
+          </div>
+
+          <!-- Radar sweep animation -->
+          <div class="radar-container hidden" id="scanning-radar" aria-live="polite">
+            <div class="radar-pulse">
+              <div class="radar-sweep"></div>
+            </div>
+            <p class="radar-text" id="radar-status-text">Inspecting domain architecture &amp; lexical signals...</p>
+          </div>
+
+          <!-- Single Scan Result Card -->
+          <div class="result-card hidden" id="single-result-card" aria-live="polite">
+            <div class="result-header">
+              <div class="score-ring-wrapper">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                  <circle class="score-ring-bg" cx="60" cy="60" r="50"></circle>
+                  <circle class="score-ring-fill" id="score-ring-fill" cx="60" cy="60" r="50"></circle>
+                </svg>
+                <div class="score-ring-center">
+                  <span class="score-number" id="score-text">0</span>
+                  <span class="score-label">SAFETY</span>
+                </div>
+              </div>
+              <div class="result-summary">
+                <div class="verdict-line">
+                  <span id="verdict-icon" class="verdict-icon" aria-hidden="true"></span>
+                  <h3 class="verdict-title" id="verdict-title">Analysis Verdict</h3>
+                </div>
+                <p class="scanned-url" id="scanned-url-display"></p>
+                <p class="confidence-text" id="confidence-display"></p>
+              </div>
+            </div>
+
+            <!-- Security Reasons -->
+            <div class="reasons-block">
+              <h4 class="section-subtitle">Security Analysis:</h4>
+              <ul class="reasons-list" id="reasons-list"></ul>
+            </div>
+
+            <!-- Typo-squatting Suggestions -->
+            <div class="suggestions-card hidden" id="did-you-mean-card">
+              <div class="suggestions-header">
+                <span class="warning-icon" aria-hidden="true">&#9888;&#65039;</span>
+                <span>Did you mean:</span>
+              </div>
+              <div class="chips-list" id="suggestion-chips"></div>
+            </div>
+
+            <!-- Page Summary -->
+            <div class="summary-card hidden" id="website-summary-card">
+              <div class="summary-card-header">
+                <h4 class="section-subtitle" style="margin-bottom:0;">About this website</h4>
+                <span class="category-chip" id="category-chip">General</span>
+              </div>
+              <ul class="summary-bullets" id="summary-bullets"></ul>
+              <p class="summary-note" id="summary-note"></p>
+            </div>
+          </div>
+
+          <div class="screen-footnote">Results are estimates, not guarantees.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SCREEN 3: COMPARE (Venus Backdrop)
+         ========================================================================= -->
+    <section class="screen screen-tool" id="screen-compare" data-screen="compare" aria-hidden="true">
+      <div class="screen-header">
+        <div class="screen-eyebrow">COMPARE TWO LINKS</div>
+        <h2 class="screen-title" tabindex="-1">Which one looks safer?</h2>
+        <div class="screen-rule" aria-hidden="true"></div>
+        <p class="screen-lede">Analyze two suspicious websites side-by-side to identify the safer destination.</p>
+      </div>
+
+      <div class="tool-panel">
+        <div class="panel-scroll-area">
+          <div class="compare-form">
             <div class="compare-inputs-grid">
               <div class="input-group">
-                <input type="text" id="compare-url-a" class="url-input" placeholder="First link (e.g. google.com)" autocomplete="off" spellcheck="false" required>
+                <input type="url" id="compare-url-a" class="url-input" placeholder="First link (e.g. google.com)" aria-label="First URL">
               </div>
-              <div class="compare-vs" aria-hidden="true">VS</div>
+              <span class="compare-vs" aria-hidden="true">vs</span>
               <div class="input-group">
-                <input type="text" id="compare-url-b" class="url-input" placeholder="Second link (e.g. g00gle.com)" autocomplete="off" spellcheck="false" required>
+                <input type="url" id="compare-url-b" class="url-input" placeholder="Second link (e.g. fake-login.tk)" aria-label="Second URL">
               </div>
-            </div>
-            <div class="compare-actions">
-              <button type="submit" id="btn-compare" class="btn-primary">
-                <span>Compare</span>
-              </button>
+              <button type="button" class="btn-primary" id="btn-compare-scan">Compare</button>
             </div>
             <div id="compare-error" class="input-error hidden" role="alert"></div>
-          </form>
-        </div>
+          </div>
 
-        <!-- TAB 3: UPLOAD SCREENSHOT -->
-        <div class="tab-content hidden" id="tab-screenshot" role="tabpanel" aria-labelledby="tab-btn-screenshot">
-          <div class="screenshot-dropzone" id="dropzone" tabindex="0" role="region" aria-label="Screenshot upload area">
-            <input type="file" id="screenshot-file" class="sr-only" accept="image/png, image/jpeg, image/webp" capture="environment">
-            <div id="dropzone-empty" class="dropzone-content">
-              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" class="dropzone-icon" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <p class="dropzone-title">Drag and drop a screenshot here, or <button type="button" id="btn-browse-file" class="btn-link">choose file</button></p>
+          <!-- Radar for Compare -->
+          <div class="radar-container hidden" id="compare-radar" aria-live="polite">
+            <div class="radar-pulse"><div class="radar-sweep"></div></div>
+            <p class="radar-text">Comparing risk profiles and security indicators...</p>
+          </div>
+
+          <!-- Compare Result Area -->
+          <div class="compare-container hidden" id="compare-result-container">
+            <div class="compare-banner hidden" id="compare-banner"></div>
+            <div class="compare-cards-grid">
+              <!-- Card A -->
+              <div class="compare-card" id="compare-card-a">
+                <div class="safer-badge hidden" id="badge-a">Safer choice</div>
+                <div class="compare-header">
+                  <span id="verdict-icon-a" class="verdict-icon" aria-hidden="true"></span>
+                  <h3 class="verdict-title" id="verdict-title-a">Verdict</h3>
+                </div>
+                <p class="scanned-url" id="url-display-a"></p>
+                <div class="compare-score-box">
+                  <span class="compare-score-num" id="score-a">--</span>
+                  <span class="compare-score-lbl">SAFETY SCORE</span>
+                </div>
+                <p class="confidence-text" id="confidence-a"></p>
+                <ul class="reasons-list" id="reasons-a"></ul>
+              </div>
+
+              <!-- Card B -->
+              <div class="compare-card" id="compare-card-b">
+                <div class="safer-badge hidden" id="badge-b">Safer choice</div>
+                <div class="compare-header">
+                  <span id="verdict-icon-b" class="verdict-icon" aria-hidden="true"></span>
+                  <h3 class="verdict-title" id="verdict-title-b">Verdict</h3>
+                </div>
+                <p class="scanned-url" id="url-display-b"></p>
+                <div class="compare-score-box">
+                  <span class="compare-score-num" id="score-b">--</span>
+                  <span class="compare-score-lbl">SAFETY SCORE</span>
+                </div>
+                <p class="confidence-text" id="confidence-b"></p>
+                <ul class="reasons-list" id="reasons-b"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="screen-footnote">Results are estimates, not guarantees.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SCREEN 4: SCREENSHOT (Mars Backdrop)
+         ========================================================================= -->
+    <section class="screen screen-tool" id="screen-screenshot" data-screen="screenshot" aria-hidden="true">
+      <div class="screen-header">
+        <div class="screen-eyebrow">UPLOAD A SCREENSHOT</div>
+        <h2 class="screen-title" tabindex="-1">Not sure about a page?</h2>
+        <div class="screen-rule" aria-hidden="true"></div>
+        <p class="screen-lede">Upload an image or screenshot of a suspicious web page for visual threat analysis.</p>
+      </div>
+
+      <div class="tool-panel">
+        <div class="panel-scroll-area">
+          <input type="file" id="screenshot-file-input" accept="image/png,image/jpeg,image/webp" class="sr-only">
+          <div class="screenshot-dropzone" id="screenshot-dropzone" tabindex="0" role="button" aria-label="Drop screenshot image here or click to browse">
+            <div class="dropzone-content" id="dropzone-prompt">
+              <div class="dropzone-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+              </div>
+              <p class="dropzone-title">Drag &amp; drop a screenshot here, or <button type="button" class="btn-link" id="btn-browse">browse</button></p>
               <p class="dropzone-limits">PNG, JPG, or WEBP up to 5 MB</p>
             </div>
-            <div id="dropzone-preview" class="dropzone-preview hidden">
-              <img id="preview-image" alt="Uploaded screenshot preview" src="">
+            <div class="dropzone-preview hidden" id="dropzone-preview">
+              <img id="preview-img" alt="Screenshot preview">
               <div class="preview-overlay">
-                <span id="preview-filename" class="preview-filename"></span>
-                <button type="button" id="btn-remove-file" class="btn-secondary btn-sm" aria-label="Remove image">Remove</button>
+                <span class="preview-filename" id="preview-filename"></span>
+                <button type="button" class="btn-secondary" id="btn-remove-file">Choose another</button>
               </div>
             </div>
           </div>
+
           <div class="screenshot-hints">
-            <p class="hint-item"><span class="hint-bullet">&bull;</span> Include the address bar for better results.</p>
-            <p class="hint-item"><span class="hint-bullet">&bull;</span> Don't upload screenshots with passwords or personal information.</p>
+            <p><span class="hint-bullet" aria-hidden="true">&#9679;</span> Our vision model extracts visible web addresses, detects spoofed logos, and inspects deceptive login forms.</p>
+            <p><span class="hint-bullet" aria-hidden="true">&#9679;</span> Screenshot analysis serves as a second-opinion check alongside text URL classification.</p>
           </div>
+
           <div class="screenshot-actions">
-            <button type="button" id="btn-scan-screenshot" class="btn-primary" disabled>
-              <span>Scan Screenshot</span>
-            </button>
+            <button type="button" class="btn-primary" id="btn-screenshot-scan" disabled>Scan screenshot</button>
           </div>
           <div id="screenshot-error" class="input-error hidden" role="alert"></div>
-        </div>
-      </main>
 
-      <!-- 3. RESULTS AREA (#results) -->
-      <section class="results-section" id="results" aria-live="polite">
-        <!-- Radar Scanning Animation -->
-        <div id="scanning-radar" class="radar-container hidden" role="status">
-          <div class="radar-pulse">
-            <div class="radar-sweep"></div>
+          <!-- Radar for Screenshot -->
+          <div class="radar-container hidden" id="screenshot-radar" aria-live="polite">
+            <div class="radar-pulse"><div class="radar-sweep"></div></div>
+            <p class="radar-text">Extracting visible text, checking spoofed logos &amp; analyzing risk...</p>
           </div>
-          <p class="radar-text">Analyzing the link...</p>
-        </div>
 
-        <!-- Single Scan Result Card -->
-        <div id="single-result-card" class="result-card hidden">
-          <div class="result-header">
-            <div class="score-ring-wrapper">
-              <svg class="score-ring" viewBox="0 0 120 120" width="100" height="100" aria-hidden="true">
-                <circle class="score-ring-bg" cx="60" cy="60" r="50"></circle>
-                <circle class="score-ring-fill" id="ring-fill" cx="60" cy="60" r="50"></circle>
-              </svg>
-              <div class="score-ring-center">
-                <span class="score-number" id="score-text">0</span>
-                <span class="score-label">Safety</span>
+          <!-- Screenshot Result Card -->
+          <div class="result-card hidden" id="screenshot-result-card" aria-live="polite">
+            <div class="result-header">
+              <div class="score-ring-wrapper">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                  <circle class="score-ring-bg" cx="60" cy="60" r="50"></circle>
+                  <circle class="score-ring-fill" id="screenshot-score-ring-fill" cx="60" cy="60" r="50"></circle>
+                </svg>
+                <div class="score-ring-center">
+                  <span class="score-number" id="screenshot-score-text">0</span>
+                  <span class="score-label">SAFETY</span>
+                </div>
+              </div>
+              <div class="result-summary">
+                <div class="verdict-line">
+                  <span id="screenshot-verdict-icon" class="verdict-icon" aria-hidden="true"></span>
+                  <h3 class="verdict-title" id="screenshot-verdict-title">Screenshot Verdict</h3>
+                </div>
+                <p class="scanned-url" id="screenshot-url-display"></p>
+                <p class="confidence-text" id="screenshot-confidence-display"></p>
               </div>
             </div>
-            <div class="result-summary">
-              <div class="verdict-line">
-                <span class="verdict-icon" id="verdict-icon" aria-hidden="true"></span>
-                <h3 class="verdict-title" id="verdict-title">Evaluating...</h3>
-              </div>
-              <p class="scanned-url" id="scanned-url-display"></p>
-              <p class="confidence-text" id="confidence-display">Confidence: --</p>
+            <div class="reasons-block">
+              <h4 class="section-subtitle">Visual Inspection Reasons:</h4>
+              <ul class="reasons-list" id="screenshot-reasons-list"></ul>
             </div>
+            <p class="screenshot-note" id="screenshot-note">Screenshot analysis provides an estimated second opinion.</p>
           </div>
 
-          <!-- Reasons list -->
-          <div class="reasons-block">
-            <h4 class="section-subtitle">Security Analysis:</h4>
-            <ul class="reasons-list" id="reasons-list"></ul>
-          </div>
-
-          <!-- Did you mean / typo suggestions card -->
-          <div id="did-you-mean-card" class="suggestions-card hidden">
-            <div class="suggestions-header">
-              <span class="warning-icon" aria-hidden="true">&#9888;&#65039;</span>
-              <strong>Did you mean:</strong>
-            </div>
-            <div class="chips-list" id="suggestions-chips"></div>
-          </div>
-
-          <!-- Website Summary card -->
-          <div id="website-summary-card" class="summary-card hidden">
-            <div class="summary-card-header">
-              <h4 class="section-subtitle">About this website</h4>
-              <span class="category-chip" id="summary-category-chip">Website</span>
-            </div>
-            <ul class="summary-bullets" id="summary-bullets-list"></ul>
-            <p class="summary-note secondary-text hidden" id="summary-note-text"></p>
-          </div>
-
-          <!-- Screenshot note -->
-          <p id="screenshot-disclaimer-note" class="screenshot-note hidden">
-            Image analysis is a best guess. Always check the address bar.
-          </p>
-        </div>
-
-        <!-- Compare Result Cards -->
-        <div id="compare-result-container" class="compare-container hidden">
-          <div id="compare-banner" class="compare-banner hidden" role="alert">
-            Neither website looks safe.
-          </div>
-          <div class="compare-cards-grid">
-            <!-- Card A -->
-            <div class="compare-card" id="compare-card-a">
-              <div class="safer-badge hidden" id="badge-a">Safer choice</div>
-              <div class="compare-header">
-                <span class="verdict-icon" id="verdict-icon-a"></span>
-                <h4 class="verdict-title" id="verdict-title-a">Link A</h4>
-              </div>
-              <p class="scanned-url" id="url-display-a"></p>
-              <div class="compare-score-box">
-                <span class="compare-score-num" id="score-a">0</span>
-                <span class="compare-score-lbl">Safety Score</span>
-              </div>
-              <p class="confidence-text" id="confidence-a"></p>
-              <ul class="reasons-list" id="reasons-a"></ul>
-            </div>
-            <!-- Card B -->
-            <div class="compare-card" id="compare-card-b">
-              <div class="safer-badge hidden" id="badge-b">Safer choice</div>
-              <div class="compare-header">
-                <span class="verdict-icon" id="verdict-icon-b"></span>
-                <h4 class="verdict-title" id="verdict-title-b">Link B</h4>
-              </div>
-              <p class="scanned-url" id="url-display-b"></p>
-              <div class="compare-score-box">
-                <span class="compare-score-num" id="score-b">0</span>
-                <span class="compare-score-lbl">Safety Score</span>
-              </div>
-              <p class="confidence-text" id="confidence-b"></p>
-              <ul class="reasons-list" id="reasons-b"></ul>
-            </div>
-          </div>
-        </div>
-      </section>
-    </section>
-
-    <!-- 4. CHATBOT PANEL (#chat) -->
-    <section class="chatbot-panel reveal-on-scroll" id="chat">
-      <div class="chat-header">
-        <div class="chat-title-group">
-          <div class="bot-avatar" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-              <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"/>
-            </svg>
-          </div>
-          <h3 class="chat-title">Ask JevShield</h3>
-        </div>
-        <span class="chat-hint" id="chat-status-hint">Scan a link to ask questions</span>
-      </div>
-
-      <!-- Messages stream -->
-      <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
-        <div class="chat-bubble bot-bubble">
-          Hello! Once you scan or compare a link, you can ask me why it was flagged, whether it is safe to open, or what steps you should take.
-        </div>
-      </div>
-
-      <!-- Typing indicator -->
-      <div class="typing-indicator hidden" id="typing-indicator" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </div>
-
-      <!-- Quick questions buttons -->
-      <div class="quick-chips" id="quick-chips">
-        <button type="button" class="quick-chip-btn" data-query="Why was this flagged?">Why was this flagged?</button>
-        <button type="button" class="quick-chip-btn" data-query="Is it safe to open?">Is it safe to open?</button>
-        <button type="button" class="quick-chip-btn" data-query="What should I do now?">What should I do now?</button>
-      </div>
-
-      <!-- Chat input form -->
-      <form id="chat-form" class="chat-form" onsubmit="event.preventDefault(); handleSendChat();">
-        <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about this scan..." maxlength="300" autocomplete="off" disabled>
-        <button type="submit" id="btn-chat-send" class="btn-primary btn-send" disabled aria-label="Send question">
-          <span>Send</span>
-        </button>
-      </form>
-      <p class="chat-disclaimer">Explanations are AI-generated.</p>
-    </section>
-
-    <!-- 5. RECENT SCANS TABLE (#history) -->
-    <section class="recent-scans-section reveal-on-scroll" id="history">
-      <h3 class="section-heading">Recent Scans</h3>
-      <div class="table-container">
-        <table class="scans-table" id="scans-table">
-          <thead>
-            <tr>
-              <th scope="col">Website</th>
-              <th scope="col">Verdict</th>
-              <th scope="col">Safety Score</th>
-              <th scope="col">Time</th>
-            </tr>
-          </thead>
-          <tbody id="scans-table-body">
-            <tr class="empty-row"><td colspan="4">Loading scan history...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 6. HOW IT WORKS (#how) -->
-    <section class="how-it-works reveal-on-scroll" id="how">
-      <h3 class="section-heading">How JevShield Works</h3>
-      <div class="steps-grid">
-        <div class="step-card">
-          <div class="step-number" aria-hidden="true">1</div>
-          <h4 class="step-title">Enter a Link</h4>
-          <p class="step-desc">Paste any URL or upload a screenshot. Our input sanitizer checks syntax, scheme, and format.</p>
-        </div>
-        <div class="step-card">
-          <div class="step-number" aria-hidden="true">2</div>
-          <h4 class="step-title">AI & Lexical Analysis</h4>
-          <p class="step-desc">JevShield extracts 20 lexical signals and character n-grams to detect phishing patterns, typosquats, and threats.</p>
-        </div>
-        <div class="step-card">
-          <div class="step-number" aria-hidden="true">3</div>
-          <h4 class="step-title">Get a Clear Answer</h4>
-          <p class="step-desc">Receive an instant safety score from 0 to 100, plain-English reasons, website summary, and assistant advice.</p>
+          <div class="screen-footnote">Results are estimates, not guarantees.</div>
         </div>
       </div>
     </section>
 
-    <!-- 7. FOOTER -->
-    <footer class="footer">
-      <p class="footer-disclaimer">Results are estimates, not guarantees.</p>
-      <p class="footer-copy">&copy; 2026 JevShield Phishing Detection Platform. Built for defense.</p>
-    </footer>
-  </div>
+    <!-- =========================================================================
+         SCREEN 5: CHAT (Earth Backdrop)
+         ========================================================================= -->
+    <section class="screen screen-tool" id="screen-chat" data-screen="chat" aria-hidden="true">
+      <div class="screen-header">
+        <div class="screen-eyebrow">ASK JEVSHIELD</div>
+        <h2 class="screen-title" tabindex="-1">Ask in plain words</h2>
+        <div class="screen-rule" aria-hidden="true"></div>
+        <p class="screen-lede">Have questions about a flagged link? Chat with our AI security assistant for clear answers.</p>
+      </div>
 
-  <!-- Back to top button (amber, up-arrow icon, fades in past hero) -->
-  <button type="button" class="back-to-top hidden" id="back-to-top" aria-label="Back to top" onclick="window.scrollTo({top:0, behavior:'smooth'});">
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-      <path d="M18 15l-6-6-6 6"/>
-    </svg>
-  </button>
+      <div class="tool-panel chat-tool-panel">
+        <!-- Target context bar -->
+        <div class="chat-context-bar" id="chat-context-bar">
+          <span class="chat-context-text" id="chat-context-text">No scan yet</span>
+          <button type="button" class="btn-ghost-sm" id="btn-chat-go-scan">Scan a link</button>
+        </div>
 
-  <!-- =========================================================================
-       HERO PLANET SWITCHER SCRIPT (PART 2 / PART 3 EXACT SPEC)
-       ========================================================================= -->
-  <script>
-    (function() {
-      // Planet definitions with PART 2 copy overrides
-      const ORDER = ['earth', 'venus', 'mars'];
-      const PLANETS = {
-        earth: {
-          mode: 'single',
-          eyebrow: 'CHECK A LINK',
-          label: 'LINK',
-          ariaLabel: 'Switch to link check mode',
-          cutout: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png',
-          still: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png',
-          lede: 'Paste any web address and get a clear verdict in seconds. Our trained model checks <br>the link, explains every warning sign, and suggests the real site if it spots a typo.'
-        },
-        venus: {
-          mode: 'compare',
-          eyebrow: 'COMPARE TWO LINKS',
-          label: 'COMPARE',
-          ariaLabel: 'Switch to compare mode',
-          cutout: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202012_640b239a-d08a-4200-adb2-741bbe129ac8.png',
-          still: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_cf55d1d8-7b59-4a64-80da-d72052ae974e.png',
-          lede: 'Not sure which of two websites to trust? Put them side by side and see which looks <br>safer, with a simple safety score for each. Every result comes with the reasons.'
-        },
-        mars: {
-          mode: 'image',
-          eyebrow: 'UPLOAD A SCREENSHOT',
-          label: 'IMAGE',
-          ariaLabel: 'Switch to screenshot mode',
-          cutout: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202018_3d559490-f613-4ed7-a3bb-3b7e9fc90fb8.png',
-          still: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_0ba6de7c-285d-43dc-b7ab-8c54c73707cb.png',
-          lede: 'Got a suspicious page but no link? Upload a screenshot and our AI looks for fake <br>login forms, copied logos and urgent threats. It is a second opinion, not proof.'
-        }
-      };
+        <!-- Chat messages container -->
+        <div class="chat-messages" id="chat-messages" aria-live="polite">
+          <div class="chat-bubble bot-bubble">
+            Hello! Once you scan or compare a link, you can ask me why it was flagged, whether it is safe to open, or what steps you should take.
+          </div>
+        </div>
 
-      let currentPlanet = null;
-      window.featuredMode = 'single';
+        <div class="typing-indicator hidden" id="typing-indicator" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
 
-      const skyEl = document.querySelector('.sky');
-      const videoEls = document.querySelectorAll('.sky video');
-      const eyebrowLineEl = document.querySelector('.eyebrow .ent-line');
-      const ledeEl = document.querySelector('p.lede');
+        <!-- Quick prompts -->
+        <div class="quick-chips" id="quick-chips">
+          <button type="button" class="quick-chip-btn" data-question="Why was this flagged?">Why was this flagged?</button>
+          <button type="button" class="quick-chip-btn" data-question="Is it safe to open?">Is it safe to open?</button>
+          <button type="button" class="quick-chip-btn" data-question="What should I do now?">What should I do now?</button>
+        </div>
 
-      const btnL = document.querySelector('.planet-l');
-      const btnR = document.querySelector('.planet-r');
-      const labelL = document.querySelector('.label.label-l');
-      const labelR = document.querySelector('.label.label-r');
+        <!-- Form -->
+        <form class="chat-form" id="chat-form">
+          <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question about this scan..." autocomplete="off" aria-label="Your question">
+          <button type="submit" class="btn-primary" id="chat-send-btn">Send</button>
+        </form>
+        <p class="chat-disclaimer">Explanations are AI-generated.</p>
+      </div>
+    </section>
 
-      const navrow = document.querySelector('.navrow');
-      const burgerBtn = document.querySelector('.burger');
-      const navLinks = document.querySelectorAll('.links a');
+    <!-- =========================================================================
+         SCREEN 6: HISTORY (Venus Backdrop)
+         ========================================================================= -->
+    <section class="screen screen-tool" id="screen-history" data-screen="history" aria-hidden="true">
+      <div class="screen-header">
+        <div class="screen-eyebrow">RECENT SCANS</div>
+        <h2 class="screen-title" tabindex="-1">Your last checks</h2>
+        <div class="screen-rule" aria-hidden="true"></div>
+        <p class="screen-lede">Review links recently verified by JevShield with timestamped security scores.</p>
+      </div>
 
-      function warm(planetName) {
-        const vid = document.querySelector(`.sky video[data-planet="${planetName}"]`);
-        if (vid && !vid.src && vid.dataset.src) {
-          vid.preload = 'auto';
-          vid.src = vid.dataset.src;
-          vid.load();
-        }
-      }
+      <div class="tool-panel">
+        <div class="panel-scroll-area">
+          <div class="table-container" id="history-table-container">
+            <table class="scans-table" id="scans-table">
+              <thead>
+                <tr>
+                  <th scope="col">Website</th>
+                  <th scope="col">Verdict</th>
+                  <th scope="col">Safety Score</th>
+                  <th scope="col">Time</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+            <div class="history-empty-state hidden" id="history-empty-state">
+              <p>No scans yet. Your checks will show up here.</p>
+              <button type="button" class="btn-ghost" id="btn-history-scan">Scan a link</button>
+            </div>
+          </div>
+          <div class="screen-footnote">Results are estimates, not guarantees.</div>
+        </div>
+      </div>
+    </section>
 
-      function warmAll() {
-        ORDER.forEach(p => warm(p));
-      }
+    <!-- =========================================================================
+         SCREEN 7: HOW IT WORKS (Mars Backdrop)
+         ========================================================================= -->
+    <section class="screen screen-tool" id="screen-how" data-screen="how" aria-hidden="true">
+      <div class="screen-header">
+        <div class="screen-eyebrow">HOW IT WORKS</div>
+        <h2 class="screen-title" tabindex="-1">Three steps to a clear answer</h2>
+        <div class="screen-rule" aria-hidden="true"></div>
+        <p class="screen-lede">Learn how JevShield analyzes web addresses through multi-layer threat intelligence.</p>
+      </div>
 
-      function show(next) {
-        if (!PLANETS[next] || currentPlanet === next) return;
+      <div class="tool-panel">
+        <div class="panel-scroll-area">
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-number" aria-hidden="true">1</div>
+              <h3 class="step-title">Feature Extraction</h3>
+              <p class="step-desc">The URL is normalized and analyzed for 20 lexical indicators: IP address usage, character entropy, dot frequency, shortener signatures, and suspicious security tokens.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number" aria-hidden="true">2</div>
+              <h3 class="step-title">ML Inference</h3>
+              <p class="step-desc">A calibrated machine learning pipeline combining character n-grams and handcrafted features evaluates the URL, enforcing a strict 90%+ quality threshold.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number" aria-hidden="true">3</div>
+              <h3 class="step-title">AI Threat Chat</h3>
+              <p class="step-desc">If safe, SSRF-protected text extraction summarizes the site. An integrated AI assistant provides plain-English explanations of all flagged security risks.</p>
+            </div>
+          </div>
 
-        // 1. Update featured mode
-        window.featuredMode = PLANETS[next].mode;
+          <div class="how-actions">
+            <a href="#/scanner" class="btn-pill-white" id="how-try-btn">Try it now</a>
+          </div>
 
-        // 2. Videos update
-        videoEls.forEach(vid => {
-          if (vid.dataset.planet === next) {
-            if (!vid.src && vid.dataset.src) vid.src = vid.dataset.src;
-            vid.classList.add('is-active');
-            const playPromise = vid.play();
-            if (playPromise !== undefined) playPromise.catch(() => {});
-          } else {
-            vid.classList.remove('is-active');
-            vid.pause();
-          }
-        });
+          <div class="screen-footnote">Results are estimates, not guarantees.</div>
+        </div>
+      </div>
+    </section>
 
-        // 3. Fallback still
-        skyEl.style.backgroundImage = `url('${PLANETS[next].still}')`;
+  </div><!-- /stage -->
 
-        // 4. Headline is FIXED (JEVSHIELD), Eyebrow updates with mode phrase
-        if (eyebrowLineEl) {
-          eyebrowLineEl.textContent = PLANETS[next].eyebrow;
-        }
-
-        // 5. Lede update
-        if (ledeEl) {
-          ledeEl.innerHTML = PLANETS[next].lede;
-        }
-
-        // 6. Slots rotation
-        const rest = ORDER.filter(p => p !== next);
-        const leftPlanet = rest[0];
-        const rightPlanet = rest[1];
-
-        // Left slot
-        btnL.dataset.planet = leftPlanet;
-        btnL.setAttribute('aria-label', PLANETS[leftPlanet].ariaLabel);
-        labelL.textContent = PLANETS[leftPlanet].label;
-        btnL.querySelectorAll('img').forEach(img => {
-          if (img.dataset.planet === leftPlanet) img.classList.add('is-shown');
-          else img.classList.remove('is-shown');
-        });
-
-        // Right slot
-        btnR.dataset.planet = rightPlanet;
-        btnR.setAttribute('aria-label', PLANETS[rightPlanet].ariaLabel);
-        labelR.textContent = PLANETS[rightPlanet].label;
-        btnR.querySelectorAll('img').forEach(img => {
-          if (img.dataset.planet === rightPlanet) img.classList.add('is-shown');
-          else img.classList.remove('is-shown');
-        });
-
-        currentPlanet = next;
-
-        // PART 2 Rule C: Also call selectMode(featuredMode) ONLY if scanner is visible
-        const scannerEl = document.getElementById('scanner');
-        if (scannerEl && window.selectMode) {
-          const rect = scannerEl.getBoundingClientRect();
-          if (rect.top < window.innerHeight && rect.bottom > 0) {
-            window.selectMode(window.featuredMode);
-          }
-        }
-      }
-
-      // Planet button click and warm events
-      [btnL, btnR].forEach(btn => {
-        btn.addEventListener('pointerenter', () => { if (btn.dataset.planet) warm(btn.dataset.planet); });
-        btn.addEventListener('focus', () => { if (btn.dataset.planet) warm(btn.dataset.planet); });
-        btn.addEventListener('click', function() { show(this.dataset.planet); });
-      });
-
-      // Burger menu functionality
-      function setBurgerOpen(open) {
-        navrow.dataset.open = open ? 'true' : 'false';
-        burgerBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      }
-
-      burgerBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setBurgerOpen(navrow.dataset.open !== 'true');
-      });
-
-      document.addEventListener('click', (e) => {
-        if (navrow.dataset.open === 'true' && !navrow.contains(e.target)) setBurgerOpen(false);
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && navrow.dataset.open === 'true') {
-          setBurgerOpen(false);
-          burgerBtn.focus();
-        }
-      });
-
-      navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-          if (navrow.dataset.open === 'true') setBurgerOpen(false);
-        });
-      });
-
-      // GET STARTED & Enroll Pill handlers (PART 2 Rule B & C)
-      function handleGetStarted(e) {
-        e.preventDefault();
-        if (window.selectMode) {
-          window.selectMode(window.featuredMode || 'single');
-        }
-        const target = document.getElementById('scanner');
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-
-      const heroCta = document.getElementById('hero-get-started');
-      const navEnroll = document.getElementById('nav-get-started');
-      if (heroCta) heroCta.addEventListener('click', handleGetStarted);
-      if (navEnroll) navEnroll.addEventListener('click', handleGetStarted);
-
-      const scrollBtn = document.getElementById('scroll-to-scanner');
-      if (scrollBtn) {
-        scrollBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const target = document.getElementById('scanner');
-          if (target) target.scrollIntoView({ behavior: 'smooth' });
-        });
-      }
-
-      // Entrance animation runner
-      function runEntrance() {
-        const docEl = document.documentElement;
-        if (!docEl.classList.contains('anim')) {
-          show('earth');
-          return;
-        }
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            docEl.classList.add('play');
-            setTimeout(() => { docEl.classList.remove('anim', 'play'); }, 2150);
-          });
-        });
-        show('earth');
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          runEntrance();
-          setTimeout(warmAll, 3000);
-        });
-      } else {
-        runEntrance();
-        setTimeout(warmAll, 3000);
-      }
-    })();
-  </script>
-
-  <!-- JevShield Application Controller Script -->
+  <!-- Client-side Controller -->
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

@@ -26,10 +26,13 @@ def test_index_endpoint(client):
     res = client.get("/")
     assert res.status_code == 200
     assert b"JEVSHIELD" in res.data
-    assert b"id=\"scanner\"" in res.data
-    assert b"id=\"chat\"" in res.data
-    assert b"id=\"history\"" in res.data
-    assert b"id=\"how\"" in res.data
+    assert b'id="screen-home"' in res.data
+    assert b'id="screen-scanner"' in res.data
+    assert b'id="screen-compare"' in res.data
+    assert b'id="screen-screenshot"' in res.data
+    assert b'id="screen-chat"' in res.data
+    assert b'id="screen-history"' in res.data
+    assert b'id="screen-how"' in res.data
 
 
 def test_predict_valid_safe_url(client):

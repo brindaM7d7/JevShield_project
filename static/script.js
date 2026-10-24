@@ -1,95 +1,401 @@
 /**
  * script.js - Client-Side Controller for JevShield
- * Unifies SpaceEdu Hero Mode Switching with JevShield Phishing Detection System
+ * Manages 7 Full-Screen Views, Dynamic Planet Space Backdrops,
+ * Hash Routing, Hero Planet Carousel, and Threat Detection APIs.
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-  let currentScan = null;
+  // Global Application State
+  let currentScreen = "home";
+  let featuredPlanet = "earth";
+  let lastScannedResult = null;
   let selectedScreenshotFile = null;
+  let isTransitioning = false;
 
-  // Mode Selection Elements
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const tabPanels = {
-    single: document.getElementById("tab-single"),
-    compare: document.getElementById("tab-compare"),
-    image: document.getElementById("tab-screenshot")
-  };
-  const tabBtnMap = {
-    single: document.getElementById("tab-btn-single"),
-    compare: document.getElementById("tab-btn-compare"),
-    image: document.getElementById("tab-btn-screenshot")
-  };
+  // Reduced motion preference
+  const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /**
-   * Global mode switcher: 'single' | 'compare' | 'image'
-   */
-  function selectMode(mode) {
-    if (!tabPanels[mode]) mode = 'single';
+  // ============================================================================
+  // 1. PLANETS & SCREEN CONFIGURATION
+  // ============================================================================
+  const PLANET_ORDER = ["earth", "venus", "mars"];
 
-    tabBtns.forEach(btn => {
-      btn.classList.remove("active");
-      btn.setAttribute("aria-selected", "false");
-    });
-    Object.values(tabPanels).forEach(panel => {
-      if (panel) {
-        panel.classList.remove("active");
-        panel.classList.add("hidden");
-      }
-    });
-
-    if (tabBtnMap[mode]) {
-      tabBtnMap[mode].classList.add("active");
-      tabBtnMap[mode].setAttribute("aria-selected", "true");
+  const PLANETS = {
+    earth: {
+      name: "earth",
+      toolScreen: "scanner",
+      eyebrow: "CHECK A LINK",
+      label: "CHECK",
+      ariaLabel: "Switch to Earth - URL safety scanner",
+      lede: "Paste any web address and get a clear verdict in seconds. Our trained model checks the link, explains every warning sign, and suggests the real site if it spots a typo.",
+      src: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_3ffb4889-c520-432d-8458-038009eb40df.mp4",
+      still: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png"
+    },
+    venus: {
+      name: "venus",
+      toolScreen: "compare",
+      eyebrow: "COMPARE TWO LINKS",
+      label: "COMPARE",
+      ariaLabel: "Switch to Venus - Side-by-side URL comparison",
+      lede: "Unsure between two similar addresses? Put them side by side and JevShield will contrast their safety scores, highlight anomalies, and mark the safer choice.",
+      src: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_b211cd74-013b-4dd3-bfd0-64491d8696fa.mp4",
+      still: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_cf55d1d8-7b59-4a64-80da-d72052ae974e.png"
+    },
+    mars: {
+      name: "mars",
+      toolScreen: "screenshot",
+      eyebrow: "UPLOAD A SCREENSHOT",
+      label: "IMAGE",
+      ariaLabel: "Switch to Mars - Webpage screenshot analysis",
+      lede: "Received a strange login screen or email snapshot? Upload an image and let our vision model extract visible links and check for spoofed branding.",
+      src: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_51eae59a-2459-4c84-907c-cc5edfe5fea7.mp4",
+      still: "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_0ba6de7c-285d-43dc-b7ab-8c54c73707cb.png"
     }
-    if (tabPanels[mode]) {
-      tabPanels[mode].classList.remove("hidden");
-      tabPanels[mode].classList.add("active");
-    }
+  };
 
-    // Auto-focus input
-    if (mode === 'single') {
-      const input = document.getElementById("url-input");
-      if (input) setTimeout(() => input.focus(), 300);
-    } else if (mode === 'compare') {
-      const inputA = document.getElementById("compare-url-a");
-      if (inputA) setTimeout(() => inputA.focus(), 300);
+  // Screen to Backdrop Planet map (Section 1)
+  const SCREEN_PLANET_MAP = {
+    home: () => featuredPlanet,
+    scanner: () => "earth",
+    compare: () => "venus",
+    screenshot: () => "mars",
+    chat: () => "earth",
+    history: () => "venus",
+    how: () => "mars"
+  };
+
+  // DOM Elements
+  const stageEl = document.getElementById("stage");
+  const skyEl = document.querySelector(".sky");
+  const veilEl = document.getElementById("veil");
+  const skyVideos = document.querySelectorAll(".sky video");
+  const navrow = document.querySelector(".navrow");
+  const burgerBtn = document.getElementById("burger-btn");
+  const navLinks = document.querySelectorAll(".links a");
+  const allScreens = document.querySelectorAll(".screen");
+
+  // Hero Elements
+  const heroEyebrowLine = document.querySelector("#hero-eyebrow .ent-line");
+  const heroLede = document.getElementById("hero-lede");
+  const btnPlanetL = document.getElementById("btn-planet-l");
+  const btnPlanetR = document.getElementById("btn-planet-r");
+  const labelL = document.getElementById("label-l");
+  const labelR = document.getElementById("label-r");
+  const heroGetStarted = document.getElementById("hero-get-started");
+  const heroArrowBtn = document.getElementById("hero-arrow-btn");
+  const navGetStarted = document.getElementById("nav-get-started");
+
+  // ============================================================================
+  // 2. VIDEO BACKDROP & WARM-UP (Section 2 & 9)
+  // ============================================================================
+  function warm(planetName) {
+    const video = document.querySelector(`.sky video[data-planet="${planetName}"]`);
+    if (video && !video.src && video.dataset.src) {
+      video.src = video.dataset.src;
+      video.load();
     }
   }
 
-  // Expose globally so Hero script and nav links can call it
-  window.selectMode = selectMode;
+  function warmAll() {
+    PLANET_ORDER.forEach(p => warm(p));
+  }
 
-  // Hook tab buttons
-  tabBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (btn.id === "tab-btn-single") selectMode("single");
-      else if (btn.id === "tab-btn-compare") selectMode("compare");
-      else if (btn.id === "tab-btn-screenshot") selectMode("image");
+  function setBackdropPlanet(planetName) {
+    if (!PLANETS[planetName]) planetName = "earth";
+
+    // Set background still fallback
+    if (skyEl) {
+      skyEl.style.backgroundImage = `url('${PLANETS[planetName].still}')`;
+    }
+
+    if (prefersReducedMotion) {
+      skyVideos.forEach(v => {
+        v.pause();
+        v.classList.remove("is-active");
+      });
+      return;
+    }
+
+    // Lazy load if needed
+    warm(planetName);
+
+    skyVideos.forEach(v => {
+      if (v.dataset.planet === planetName) {
+        v.classList.add("is-active");
+        if (v.paused) {
+          const playPromise = v.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {/* Autoplay policy handled */});
+          }
+        }
+      } else {
+        v.classList.remove("is-active");
+        v.pause();
+      }
+    });
+  }
+
+  // ============================================================================
+  // 3. FULL SCREEN ROUTER & TRANSITION ENGINE (Section 1, 2, 3)
+  // ============================================================================
+  function goTo(screenName, updateHash = true) {
+    if (!SCREEN_PLANET_MAP[screenName]) screenName = "home";
+    if (currentScreen === screenName && document.getElementById(`screen-${screenName}`)?.classList.contains("is-active")) {
+      return;
+    }
+
+    const outgoingScreen = document.getElementById(`screen-${currentScreen}`);
+    const incomingScreen = document.getElementById(`screen-${screenName}`);
+    if (!incomingScreen) return;
+
+    isTransitioning = true;
+
+    // A. Update backdrop planet
+    const targetPlanet = SCREEN_PLANET_MAP[screenName]();
+    setBackdropPlanet(targetPlanet);
+
+    // B. Update veil overlay (opacity 0 on home, dark gradient on tool screens)
+    if (veilEl) {
+      if (screenName === "home") {
+        veilEl.classList.remove("is-active");
+      } else {
+        veilEl.classList.add("is-active");
+      }
+    }
+
+    // C. Update nav aria-current
+    navLinks.forEach(link => {
+      const linkScreen = link.dataset.screen;
+      if (linkScreen === screenName || (screenName === "home" && link.classList.contains("logo"))) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+
+    // D. Update "Get started" button destination
+    updateGetStartedLinks();
+
+    // E. Transition between screens
+    if (prefersReducedMotion || !outgoingScreen) {
+      if (outgoingScreen) {
+        outgoingScreen.classList.remove("is-active", "is-leaving", "is-entering");
+        outgoingScreen.setAttribute("aria-hidden", "true");
+      }
+      incomingScreen.classList.add("is-active");
+      incomingScreen.setAttribute("aria-hidden", "false");
+      const h2 = incomingScreen.querySelector("h2");
+      if (h2) h2.focus();
+      isTransitioning = false;
+    } else {
+      // Outgoing screen lifts 8px and fades in .22s
+      outgoingScreen.classList.add("is-leaving");
+
+      setTimeout(() => {
+        outgoingScreen.classList.remove("is-active", "is-leaving", "is-entering");
+        outgoingScreen.setAttribute("aria-hidden", "true");
+
+        // Incoming screen activates and animates parts with hero keyframes
+        incomingScreen.classList.add("is-active", "is-entering");
+        incomingScreen.setAttribute("aria-hidden", "false");
+
+        const h2 = incomingScreen.querySelector("h2");
+        if (h2) h2.focus();
+
+        setTimeout(() => {
+          incomingScreen.classList.remove("is-entering");
+          isTransitioning = false;
+        }, 580);
+      }, 220);
+    }
+
+    // Close mobile menu
+    setBurgerOpen(false);
+
+    // Update state & hash
+    currentScreen = screenName;
+    if (updateHash && window.location.hash !== `#/${screenName}`) {
+      window.location.hash = `#/${screenName}`;
+    }
+
+    // Trigger dynamic data reload if entering history
+    if (screenName === "history") {
+      loadHistory();
+    }
+  }
+
+  // Expose goTo globally for inline actions & viva demo
+  window.goTo = goTo;
+  // Expose renderers globally for verification and viva demos
+  window.renderSingleResult = renderSingleResult;
+  window.renderCompareResults = renderCompareResults;
+  window.renderScreenshotResult = renderScreenshotResult;
+
+
+  // Hash change listener (supports Back/Forward buttons)
+  function handleHashChange() {
+    const hash = window.location.hash.replace(/^#\/?/, "") || "home";
+    if (SCREEN_PLANET_MAP[hash]) {
+      goTo(hash, false);
+    } else {
+      goTo("home", false);
+    }
+  }
+
+  window.addEventListener("hashchange", handleHashChange);
+
+  // Hook all navigation and screen links
+  document.querySelectorAll("a[href^='#/']").forEach(link => {
+    link.addEventListener("click", (e) => {
+      const targetScreen = link.dataset.screen || link.getAttribute("href").replace(/^#\/?/, "");
+      if (targetScreen === "get-started") {
+        e.preventDefault();
+        goTo(PLANETS[featuredPlanet].toolScreen);
+      } else if (SCREEN_PLANET_MAP[targetScreen]) {
+        e.preventDefault();
+        goTo(targetScreen);
+      }
     });
   });
 
-  // Hook nav links with data-mode
-  document.querySelectorAll('a[data-mode]').forEach(link => {
-    link.addEventListener('click', (e) => {
-      const mode = link.getAttribute('data-mode');
-      if (mode) selectMode(mode);
+  // Mobile Burger menu toggle
+  function setBurgerOpen(open) {
+    if (!navrow || !burgerBtn) return;
+    navrow.dataset.open = open ? "true" : "false";
+    burgerBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  if (burgerBtn) {
+    burgerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setBurgerOpen(navrow.dataset.open !== "true");
     });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (navrow && navrow.dataset.open === "true" && !navrow.contains(e.target)) {
+      setBurgerOpen(false);
+    }
   });
 
-  // Single Scan Form elements
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && navrow && navrow.dataset.open === "true") {
+      setBurgerOpen(false);
+      burgerBtn.focus();
+    }
+  });
+
+  // ============================================================================
+  // 4. HERO CAROUSEL ON SCREEN 1 (Home)
+  // ============================================================================
+  function updateGetStartedLinks() {
+    const targetTool = PLANETS[featuredPlanet].toolScreen;
+    if (heroGetStarted) heroGetStarted.setAttribute("href", `#/${targetTool}`);
+    if (heroArrowBtn) heroArrowBtn.setAttribute("href", `#/${targetTool}`);
+    if (navGetStarted) navGetStarted.setAttribute("href", `#/${targetTool}`);
+  }
+
+  function setFeaturedPlanet(planet) {
+    if (!PLANETS[planet]) planet = "earth";
+    featuredPlanet = planet;
+
+    // Update Eyebrow and Lede
+    if (heroEyebrowLine) heroEyebrowLine.textContent = PLANETS[planet].eyebrow;
+    if (heroLede) heroLede.textContent = PLANETS[planet].lede;
+
+    // Update side planet slots
+    const rest = PLANET_ORDER.filter(p => p !== planet);
+    const leftPlanet = rest[0];
+    const rightPlanet = rest[1];
+
+    if (btnPlanetL) {
+      btnPlanetL.dataset.planet = leftPlanet;
+      btnPlanetL.setAttribute("aria-label", PLANETS[leftPlanet].ariaLabel);
+      btnPlanetL.querySelectorAll("img").forEach(img => {
+        img.classList.toggle("is-shown", img.dataset.planet === leftPlanet);
+      });
+    }
+    if (labelL) labelL.textContent = PLANETS[leftPlanet].label;
+
+    if (btnPlanetR) {
+      btnPlanetR.dataset.planet = rightPlanet;
+      btnPlanetR.setAttribute("aria-label", PLANETS[rightPlanet].ariaLabel);
+      btnPlanetR.querySelectorAll("img").forEach(img => {
+        img.classList.toggle("is-shown", img.dataset.planet === rightPlanet);
+      });
+    }
+    if (labelR) labelR.textContent = PLANETS[rightPlanet].label;
+
+    updateGetStartedLinks();
+
+    // If currently on home, update backdrop video to match
+    if (currentScreen === "home") {
+      setBackdropPlanet(planet);
+    }
+  }
+
+  if (btnPlanetL) {
+    btnPlanetL.addEventListener("pointerenter", () => warm(btnPlanetL.dataset.planet));
+    btnPlanetL.addEventListener("focus", () => warm(btnPlanetL.dataset.planet));
+    btnPlanetL.addEventListener("click", () => setFeaturedPlanet(btnPlanetL.dataset.planet));
+  }
+
+  if (btnPlanetR) {
+    btnPlanetR.addEventListener("pointerenter", () => warm(btnPlanetR.dataset.planet));
+    btnPlanetR.addEventListener("focus", () => warm(btnPlanetR.dataset.planet));
+    btnPlanetR.addEventListener("click", () => setFeaturedPlanet(btnPlanetR.dataset.planet));
+  }
+
+  if (heroGetStarted) {
+    heroGetStarted.addEventListener("click", (e) => {
+      e.preventDefault();
+      goTo(PLANETS[featuredPlanet].toolScreen);
+    });
+  }
+
+  if (heroArrowBtn) {
+    heroArrowBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      goTo(PLANETS[featuredPlanet].toolScreen);
+    });
+  }
+
+  // ============================================================================
+  // 5. SCREEN 2: SCANNER LOGIC (Animated Compact Collapse)
+  // ============================================================================
   const urlInput = document.getElementById("url-input");
   const btnPaste = document.getElementById("btn-paste");
   const btnClear = document.getElementById("btn-clear");
-  const singleError = document.getElementById("single-error");
+  const btnScan = document.getElementById("btn-scan");
+  const urlError = document.getElementById("url-error");
+  const scannerInputBox = document.getElementById("scanner-input-box");
+  const compactResetRow = document.getElementById("compact-reset-row");
+  const compactUrlLabel = document.getElementById("compact-url-label");
+  const btnScanAnother = document.getElementById("btn-scan-another");
+
+  const singleRadar = document.getElementById("scanning-radar");
+  const singleResultCard = document.getElementById("single-result-card");
+  const scoreRingFill = document.getElementById("score-ring-fill");
+  const scoreText = document.getElementById("score-text");
+  const verdictIcon = document.getElementById("verdict-icon");
+  const verdictTitle = document.getElementById("verdict-title");
+  const scannedUrlDisplay = document.getElementById("scanned-url-display");
+  const confidenceDisplay = document.getElementById("confidence-display");
+  const reasonsList = document.getElementById("reasons-list");
+  const didYouMeanCard = document.getElementById("did-you-mean-card");
+  const suggestionChips = document.getElementById("suggestion-chips");
+  const websiteSummaryCard = document.getElementById("website-summary-card");
+  const categoryChip = document.getElementById("category-chip");
+  const summaryBullets = document.getElementById("summary-bullets");
+  const summaryNote = document.getElementById("summary-note");
 
   if (urlInput) {
     urlInput.addEventListener("input", () => {
-      if (urlInput.value.trim().length > 0) {
-        btnClear.classList.remove("hidden");
-      } else {
-        btnClear.classList.add("hidden");
-      }
-      singleError.classList.add("hidden");
+      btnClear.classList.toggle("hidden", urlInput.value.trim().length === 0);
+      urlError.classList.add("hidden");
+    });
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSingleScan();
     });
   }
 
@@ -97,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnClear.addEventListener("click", () => {
       urlInput.value = "";
       btnClear.classList.add("hidden");
-      singleError.classList.add("hidden");
+      urlError.classList.add("hidden");
       urlInput.focus();
     });
   }
@@ -109,381 +415,266 @@ document.addEventListener("DOMContentLoaded", () => {
         if (text) {
           urlInput.value = text.trim();
           btnClear.classList.remove("hidden");
-          singleError.classList.add("hidden");
+          urlError.classList.add("hidden");
           urlInput.focus();
         }
       } catch (err) {
-        singleError.textContent = "Could not access clipboard. Please paste manually.";
-        singleError.classList.remove("hidden");
+        urlError.textContent = "Could not access clipboard. Please paste manually.";
+        urlError.classList.remove("hidden");
       }
     });
   }
 
-  // Compare Form elements
-  const compareUrlA = document.getElementById("compare-url-a");
-  const compareUrlB = document.getElementById("compare-url-b");
-  const compareError = document.getElementById("compare-error");
-
-  // Screenshot Form elements
-  const dropzone = document.getElementById("dropzone");
-  const screenshotFileInput = document.getElementById("screenshot-file");
-  const btnBrowseFile = document.getElementById("btn-browse-file");
-  const dropzoneEmpty = document.getElementById("dropzone-empty");
-  const dropzonePreview = document.getElementById("dropzone-preview");
-  const previewImage = document.getElementById("preview-image");
-  const previewFilename = document.getElementById("preview-filename");
-  const btnRemoveFile = document.getElementById("btn-remove-file");
-  const btnScanScreenshot = document.getElementById("btn-scan-screenshot");
-  const screenshotError = document.getElementById("screenshot-error");
-
-  if (btnBrowseFile && screenshotFileInput) {
-    btnBrowseFile.addEventListener("click", () => screenshotFileInput.click());
+  if (btnScan) {
+    btnScan.addEventListener("click", handleSingleScan);
   }
-  if (dropzone && screenshotFileInput) {
-    dropzone.addEventListener("click", (e) => {
-      if (e.target !== btnRemoveFile && !dropzonePreview.contains(e.target)) {
-        screenshotFileInput.click();
-      }
-    });
-    dropzone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropzone.classList.add("dragover");
-    });
-    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropzone.classList.remove("dragover");
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleImageFile(e.dataTransfer.files[0]);
-      }
-    });
-    screenshotFileInput.addEventListener("change", (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleImageFile(e.target.files[0]);
-      }
+
+  if (btnScanAnother) {
+    btnScanAnother.addEventListener("click", () => {
+      scannerInputBox.classList.remove("collapsed");
+      compactResetRow.classList.add("hidden");
+      urlInput.value = "";
+      btnClear.classList.add("hidden");
+      urlError.classList.add("hidden");
+      singleResultCard.classList.add("hidden");
+      urlInput.focus();
     });
   }
 
-  if (btnRemoveFile) {
-    btnRemoveFile.addEventListener("click", (e) => {
-      e.stopPropagation();
-      selectedScreenshotFile = null;
-      screenshotFileInput.value = "";
-      dropzonePreview.classList.add("hidden");
-      dropzoneEmpty.classList.remove("hidden");
-      btnScanScreenshot.disabled = true;
-      screenshotError.classList.add("hidden");
-    });
-  }
-
-  function handleImageFile(file) {
-    const validTypes = ["image/png", "image/jpeg", "image/webp"];
-    if (!validTypes.includes(file.type)) {
-      showError(screenshotError, "Only PNG, JPG, or WEBP images are accepted.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      showError(screenshotError, "Image exceeds the maximum allowed size of 5 MB.");
-      return;
-    }
-    screenshotError.classList.add("hidden");
-    selectedScreenshotFile = file;
-    previewFilename.textContent = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewImage.src = e.target.result;
-      dropzoneEmpty.classList.add("hidden");
-      dropzonePreview.classList.remove("hidden");
-      btnScanScreenshot.disabled = false;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  if (btnScanScreenshot) {
-    btnScanScreenshot.addEventListener("click", handleScreenshotScan);
-  }
-
-  // Results DOM elements
-  const scanningRadar = document.getElementById("scanning-radar");
-  const singleResultCard = document.getElementById("single-result-card");
-  const ringFill = document.getElementById("ring-fill");
-  const scoreText = document.getElementById("score-text");
-  const verdictIcon = document.getElementById("verdict-icon");
-  const verdictTitle = document.getElementById("verdict-title");
-  const scannedUrlDisplay = document.getElementById("scanned-url-display");
-  const confidenceDisplay = document.getElementById("confidence-display");
-  const reasonsList = document.getElementById("reasons-list");
-  const didYouMeanCard = document.getElementById("did-you-mean-card");
-  const suggestionsChips = document.getElementById("suggestions-chips");
-  const websiteSummaryCard = document.getElementById("website-summary-card");
-  const summaryCategoryChip = document.getElementById("summary-category-chip");
-  const summaryBulletsList = document.getElementById("summary-bullets-list");
-  const summaryNoteText = document.getElementById("summary-note-text");
-  const screenshotDisclaimerNote = document.getElementById("screenshot-disclaimer-note");
-
-  const compareResultContainer = document.getElementById("compare-result-container");
-  const compareBanner = document.getElementById("compare-banner");
-
-  function showError(el, msg) {
-    el.textContent = msg;
-    el.classList.remove("hidden");
-  }
-
-  function hideAllResults() {
-    singleResultCard.classList.add("hidden");
-    compareResultContainer.classList.add("hidden");
-  }
-
-  function showRadar() {
-    hideAllResults();
-    scanningRadar.classList.remove("hidden");
-  }
-
-  function hideRadar() {
-    scanningRadar.classList.add("hidden");
-  }
-
-  function animateScoreRing(targetScore, isPhishing) {
-    const radius = 50;
-    const circumference = 2 * Math.PI * radius; // 314.159
-    const offset = circumference - (targetScore / 100) * circumference;
-
-    const rootStyles = getComputedStyle(document.documentElement);
-    const earthColor = rootStyles.getPropertyValue('--earth').trim() || '#5BA8F5';
-    const marsLineColor = rootStyles.getPropertyValue('--mars-line').trim() || '#E8735A';
-    const venusColor = rootStyles.getPropertyValue('--venus').trim() || '#E8B04C';
-
-    let strokeColor = earthColor; // Earth blue safe
-    if (isPhishing) strokeColor = marsLineColor; // Mars line unsafe
-    else if (targetScore < 70) strokeColor = venusColor; // Venus gold caution
-
-    ringFill.style.stroke = strokeColor;
-    ringFill.style.strokeDashoffset = circumference;
-
-    let current = 0;
-    const duration = 1000;
-    const stepTime = 16;
-    const increment = targetScore / (duration / stepTime);
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= targetScore) {
-        current = targetScore;
-        clearInterval(timer);
-      }
-      scoreText.textContent = Math.round(current);
-    }, stepTime);
-
-    setTimeout(() => {
-      ringFill.style.strokeDashoffset = offset;
-    }, 50);
-  }
-
-  /**
-   * Single URL scan handler
-   */
   async function handleSingleScan() {
-    const rawUrl = urlInput.value.trim();
-    if (!rawUrl) {
-      showError(singleError, "Enter a valid website address, like example.com");
+    const url = urlInput.value.trim();
+    if (!url) {
+      urlError.textContent = "Please enter a valid website address.";
+      urlError.classList.remove("hidden");
       return;
     }
-    singleError.classList.add("hidden");
-    showRadar();
+    urlError.classList.add("hidden");
+    singleResultCard.classList.add("hidden");
+    singleRadar.classList.remove("hidden");
 
     const startTime = Date.now();
     try {
       const res = await fetch("/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: rawUrl })
+        body: JSON.stringify({ url })
       });
       const data = await res.json();
-      const elapsed = Date.now() - startTime;
-      const delay = Math.max(0, 1500 - elapsed);
+      const delay = Math.max(0, 1000 - (Date.now() - startTime));
 
       setTimeout(() => {
-        hideRadar();
+        singleRadar.classList.add("hidden");
         if (!res.ok) {
-          showError(singleError, data.error || "Please enter a valid website address");
+          urlError.textContent = data.error || "Failed to scan website. Try again.";
+          urlError.classList.remove("hidden");
           return;
         }
-        renderSingleResult(data, false);
-        loadHistory();
+
+        // Collapse input box into compact bar
+        scannerInputBox.classList.add("collapsed");
+        compactUrlLabel.textContent = data.url;
+        compactResetRow.classList.remove("hidden");
+
+        renderSingleResult(data);
+        updateChatContext(data);
       }, delay);
     } catch (err) {
-      hideRadar();
-      showError(singleError, "Can't reach the server. Try again.");
+      singleRadar.classList.add("hidden");
+      urlError.textContent = "Can't reach the server. Make sure Flask is running.";
+      urlError.classList.remove("hidden");
     }
   }
-  window.handleSingleScan = handleSingleScan;
 
-  function renderSingleResult(data, isScreenshot = false) {
-    currentScan = data;
-    singleResultCard.classList.remove("hidden", "state-safe", "state-phishing");
-
+  function renderSingleResult(data) {
+    lastScannedResult = data;
     const isPhishing = data.result === "phishing";
-    if (isPhishing) {
-      singleResultCard.classList.add("state-phishing");
-      verdictTitle.textContent = "Looks like phishing";
-      verdictTitle.className = "verdict-title verdict-phishing";
-      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`;
-    } else {
-      singleResultCard.classList.add("state-safe");
-      verdictTitle.textContent = "Looks safe";
-      verdictTitle.className = "verdict-title verdict-safe";
-      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
-    }
+
+    singleResultCard.className = `result-card ${isPhishing ? 'verdict-phishing' : 'verdict-safe'}`;
+    verdictTitle.textContent = isPhishing ? "Looks like phishing" : "Looks safe";
+
+    verdictIcon.innerHTML = isPhishing
+      ? `<svg viewBox="0 0 24 24" width="24" height="24" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="24" height="24" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
 
     scannedUrlDisplay.textContent = data.url;
     confidenceDisplay.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
-    animateScoreRing(data.safety_score, isPhishing);
 
-    // Reasons list
+    // Animate Score Ring
+    animateRing(scoreRingFill, scoreText, data.safety_score, isPhishing);
+
+    // Reasons
     reasonsList.innerHTML = "";
-    if (data.reasons && data.reasons.length > 0) {
+    if (data.reasons && data.reasons.length) {
       data.reasons.forEach(r => {
         const li = document.createElement("li");
-        const isSafeNotice = r.toLowerCase().includes("no common phishing") || r.toLowerCase().includes("safe");
-        li.className = `reason-item ${isSafeNotice ? 'reason-safe' : 'reason-warning'}`;
+        li.className = "reason-item";
         li.textContent = r;
         reasonsList.appendChild(li);
       });
     }
 
-    // Did you mean suggestions
+    // Typo Suggestions
     if (data.suggestions && data.suggestions.length > 0) {
-      suggestionsChips.innerHTML = "";
+      didYouMeanCard.classList.remove("hidden");
+      suggestionChips.innerHTML = "";
       data.suggestions.forEach(s => {
         const chip = document.createElement("button");
         chip.type = "button";
-        chip.className = "chip-btn";
+        chip.className = "suggestion-chip";
         chip.textContent = s;
         chip.addEventListener("click", () => {
           urlInput.value = s;
-          selectMode("single");
+          scannerInputBox.classList.remove("collapsed");
+          compactResetRow.classList.add("hidden");
           handleSingleScan();
         });
-        suggestionsChips.appendChild(chip);
+        suggestionChips.appendChild(chip);
       });
-      didYouMeanCard.classList.remove("hidden");
     } else {
       didYouMeanCard.classList.add("hidden");
     }
 
-    // Website summary
-    if (data.summary && data.summary.points) {
-      summaryCategoryChip.textContent = data.summary.category || "Website";
-      summaryBulletsList.innerHTML = "";
-      data.summary.points.forEach((pt, i) => {
-        const li = document.createElement("li");
-        li.textContent = pt;
-        li.style.animation = `bubble-slide 0.25s ease-out ${i * 0.1}s both`;
-        summaryBulletsList.appendChild(li);
-      });
-      summaryNoteText.classList.add("hidden");
+    // Page Summary
+    if (data.summary && (data.summary.bullets?.length || data.summary.category)) {
       websiteSummaryCard.classList.remove("hidden");
-    } else if (data.summary_note) {
-      summaryCategoryChip.textContent = "Notice";
-      summaryBulletsList.innerHTML = "";
-      summaryNoteText.textContent = data.summary_note;
-      summaryNoteText.classList.remove("hidden");
-      websiteSummaryCard.classList.remove("hidden");
+      categoryChip.textContent = data.summary.category || "General";
+      summaryBullets.innerHTML = "";
+      if (data.summary.bullets) {
+        data.summary.bullets.forEach(b => {
+          const li = document.createElement("li");
+          li.textContent = b;
+          summaryBullets.appendChild(li);
+        });
+      }
+      summaryNote.textContent = data.summary.note || "";
     } else {
       websiteSummaryCard.classList.add("hidden");
     }
 
-    if (isScreenshot) screenshotDisclaimerNote.classList.remove("hidden");
-    else screenshotDisclaimerNote.classList.add("hidden");
-
-    enableChat(data);
-    singleResultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    singleResultCard.classList.remove("hidden");
   }
 
-  /**
-   * Compare Two Links scan handler
-   */
-  async function handleCompareScan() {
-    const urlA = compareUrlA.value.trim();
-    const urlB = compareUrlB.value.trim();
-    if (!urlA || !urlB) {
-      showError(compareError, "Please enter both website addresses to compare.");
+  function animateRing(ringEl, textEl, targetScore, isPhishing) {
+    const circumference = 2 * Math.PI * 50; // 314.159
+    const offset = circumference - (targetScore / 100) * circumference;
+    ringEl.style.stroke = isPhishing ? "var(--mars-line)" : "var(--earth)";
+    ringEl.style.strokeDashoffset = offset;
+
+    let current = 0;
+    const step = Math.max(1, Math.floor(targetScore / 30));
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= targetScore) {
+        current = targetScore;
+        clearInterval(timer);
+      }
+      textEl.textContent = current;
+    }, 25);
+  }
+
+  // ============================================================================
+  // 6. SCREEN 3: COMPARE LOGIC (Side-by-Side Links)
+  // ============================================================================
+  const compareUrlA = document.getElementById("compare-url-a");
+  const compareUrlB = document.getElementById("compare-url-b");
+  const btnCompareScan = document.getElementById("btn-compare-scan");
+  const compareError = document.getElementById("compare-error");
+  const compareRadar = document.getElementById("compare-radar");
+  const compareContainer = document.getElementById("compare-result-container");
+  const compareBanner = document.getElementById("compare-banner");
+  const compareCardA = document.getElementById("compare-card-a");
+  const compareCardB = document.getElementById("compare-card-b");
+  const badgeA = document.getElementById("badge-a");
+  const badgeB = document.getElementById("badge-b");
+
+  if (btnCompareScan) {
+    btnCompareScan.addEventListener("click", handleCompare);
+  }
+
+  async function handleCompare() {
+    const url_a = compareUrlA.value.trim();
+    const url_b = compareUrlB.value.trim();
+
+    if (!url_a || !url_b) {
+      compareError.textContent = "Please enter both web addresses to compare.";
+      compareError.classList.remove("hidden");
       return;
     }
     compareError.classList.add("hidden");
-    showRadar();
+    compareContainer.classList.add("hidden");
+    compareRadar.classList.remove("hidden");
 
     const startTime = Date.now();
     try {
       const res = await fetch("/compare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url_a: urlA, url_b: urlB })
+        body: JSON.stringify({ url_a, url_b })
       });
       const data = await res.json();
-      const elapsed = Date.now() - startTime;
-      const delay = Math.max(0, 1500 - elapsed);
+      const delay = Math.max(0, 1000 - (Date.now() - startTime));
 
       setTimeout(() => {
-        hideRadar();
+        compareRadar.classList.add("hidden");
         if (!res.ok) {
-          showError(compareError, data.error || "Error comparing websites.");
+          compareError.textContent = data.error || "Error comparing links.";
+          compareError.classList.remove("hidden");
           return;
         }
-        renderCompareResult(data);
-        loadHistory();
+
+        renderCompareResults(data);
       }, delay);
     } catch (err) {
-      hideRadar();
-      showError(compareError, "Can't reach the server. Try again.");
+      compareRadar.classList.add("hidden");
+      compareError.textContent = "Can't reach the server. Try again.";
+      compareError.classList.remove("hidden");
     }
   }
-  window.handleCompareScan = handleCompareScan;
 
-  function renderCompareResult(data) {
-    compareResultContainer.classList.remove("hidden");
+  function renderCompareResults(data) {
+    const a = data.a || data.result_a;
+    const b = data.b || data.result_b;
+    const safer = data.safer;
 
-    if (data.note) {
-      compareBanner.textContent = data.note;
-      compareBanner.classList.remove("hidden");
-      if (data.note.toLowerCase().includes("similar") || data.safer === "similar") {
-        compareBanner.className = "compare-banner banner-similar";
-        compareResultContainer.classList.add("state-similar");
-      } else {
-        compareBanner.className = "compare-banner";
-        compareResultContainer.classList.remove("state-similar");
-      }
-    } else {
-      compareBanner.classList.add("hidden");
-      compareResultContainer.classList.remove("state-similar");
+    // Banner setup
+    compareBanner.className = "compare-banner";
+    if (safer === "similar") {
+      compareBanner.classList.add("banner-caution");
+      compareBanner.textContent = "Both links have similar security profiles. Exercise caution.";
+    } else if (safer === "a") {
+      compareBanner.classList.add("banner-safer");
+      compareBanner.textContent = `Safer choice: ${a.url}`;
+    } else if (safer === "b") {
+      compareBanner.classList.add("banner-safer");
+      compareBanner.textContent = `Safer choice: ${b.url}`;
     }
 
-    const badgeA = document.getElementById("badge-a");
-    const badgeB = document.getElementById("badge-b");
-    badgeA.classList.add("hidden");
-    badgeB.classList.add("hidden");
+    renderCompareSlot("a", a, safer === "a", safer === "similar");
+    renderCompareSlot("b", b, safer === "b", safer === "similar");
 
-    if (data.safer === "a") badgeA.classList.remove("hidden");
-    else if (data.safer === "b") badgeB.classList.remove("hidden");
-
-    renderCompareCard("a", data.a);
-    renderCompareCard("b", data.b);
-
-    enableChat(data.a);
-    compareResultContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    compareContainer.classList.remove("hidden");
   }
 
-  function renderCompareCard(slot, cardData) {
-    const vTitle = document.getElementById(`verdict-title-${slot}`);
+  function renderCompareSlot(slot, cardData, isSafer, isSimilar) {
+    const cardEl = document.getElementById(`compare-card-${slot}`);
+    const badgeEl = document.getElementById(`badge-${slot}`);
     const vIcon = document.getElementById(`verdict-icon-${slot}`);
+    const vTitle = document.getElementById(`verdict-title-${slot}`);
     const isPhishing = cardData.result === "phishing";
 
+    cardEl.className = "compare-card";
+    if (isSimilar) cardEl.classList.add("card-similar");
+    else if (isSafer) cardEl.classList.add("card-safer");
+    else if (isPhishing) cardEl.classList.add("card-unsafe");
+
+    badgeEl.classList.toggle("hidden", !isSafer);
+
     vTitle.textContent = isPhishing ? "Looks like phishing" : "Looks safe";
-    vTitle.className = `verdict-title ${isPhishing ? 'verdict-phishing' : 'verdict-safe'}`;
+    vTitle.style.color = isPhishing ? "var(--mars-text)" : "#ffffff";
 
     vIcon.innerHTML = isPhishing
-      ? `<svg viewBox="0 0 24 24" width="22" height="22" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
-      : `<svg viewBox="0 0 24 24" width="22" height="22" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
+      ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="20" height="20" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
 
     document.getElementById(`url-display-${slot}`).textContent = cardData.url;
     document.getElementById(`score-${slot}`).textContent = cardData.safety_score;
@@ -501,13 +692,104 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /**
-   * Screenshot OCR Scan handler
-   */
+  // ============================================================================
+  // 7. SCREEN 4: SCREENSHOT LOGIC
+  // ============================================================================
+  const dropzone = document.getElementById("screenshot-dropzone");
+  const fileInput = document.getElementById("screenshot-file-input");
+  const dropzonePrompt = document.getElementById("dropzone-prompt");
+  const dropzonePreview = document.getElementById("dropzone-preview");
+  const previewImg = document.getElementById("preview-img");
+  const previewFilename = document.getElementById("preview-filename");
+  const btnRemoveFile = document.getElementById("btn-remove-file");
+  const btnBrowse = document.getElementById("btn-browse");
+  const btnScreenshotScan = document.getElementById("btn-screenshot-scan");
+  const screenshotError = document.getElementById("screenshot-error");
+  const screenshotRadar = document.getElementById("screenshot-radar");
+  const screenshotResultCard = document.getElementById("screenshot-result-card");
+
+  if (btnBrowse && fileInput) {
+    btnBrowse.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+  }
+
+  if (dropzone && fileInput) {
+    dropzone.addEventListener("click", (e) => {
+      if (e.target !== btnRemoveFile && !dropzonePreview.contains(e.target)) {
+        fileInput.click();
+      }
+    });
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processImageFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processImageFile(e.target.files[0]);
+      }
+    });
+  }
+
+  function processImageFile(file) {
+    const valid = ["image/png", "image/jpeg", "image/webp"];
+    if (!valid.includes(file.type)) {
+      screenshotError.textContent = "Only PNG, JPG, or WEBP images are accepted.";
+      screenshotError.classList.remove("hidden");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      screenshotError.textContent = "Image exceeds maximum allowed size of 5 MB.";
+      screenshotError.classList.remove("hidden");
+      return;
+    }
+    screenshotError.classList.add("hidden");
+    selectedScreenshotFile = file;
+    previewFilename.textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      dropzonePrompt.classList.add("hidden");
+      dropzonePreview.classList.remove("hidden");
+      btnScreenshotScan.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (btnRemoveFile) {
+    btnRemoveFile.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectedScreenshotFile = null;
+      fileInput.value = "";
+      dropzonePreview.classList.add("hidden");
+      dropzonePrompt.classList.remove("hidden");
+      btnScreenshotScan.disabled = true;
+      screenshotError.classList.add("hidden");
+      screenshotResultCard.classList.add("hidden");
+    });
+  }
+
+  if (btnScreenshotScan) {
+    btnScreenshotScan.addEventListener("click", handleScreenshotScan);
+  }
+
   async function handleScreenshotScan() {
     if (!selectedScreenshotFile) return;
     screenshotError.classList.add("hidden");
-    showRadar();
+    screenshotResultCard.classList.add("hidden");
+    screenshotRadar.classList.remove("hidden");
 
     const formData = new FormData();
     formData.append("image", selectedScreenshotFile);
@@ -519,46 +801,105 @@ document.addEventListener("DOMContentLoaded", () => {
         body: formData
       });
       const data = await res.json();
-      const elapsed = Date.now() - startTime;
-      const delay = Math.max(0, 1500 - elapsed);
+      const delay = Math.max(0, 1000 - (Date.now() - startTime));
 
       setTimeout(() => {
-        hideRadar();
+        screenshotRadar.classList.add("hidden");
         if (!res.ok) {
-          showError(screenshotError, data.error || "Error analyzing image.");
+          screenshotError.textContent = data.error || "Failed to analyze screenshot.";
+          screenshotError.classList.remove("hidden");
           return;
         }
-        renderSingleResult(data, true);
-        loadHistory();
+
+        renderScreenshotResult(data);
       }, delay);
     } catch (err) {
-      hideRadar();
-      showError(screenshotError, "Can't reach the server. Try again.");
+      screenshotRadar.classList.add("hidden");
+      screenshotError.textContent = "Can't reach the server. Try again.";
+      screenshotError.classList.remove("hidden");
     }
   }
 
-  /**
-   * Chatbot functionality
-   */
-  const chatInput = document.getElementById("chat-input");
-  const btnChatSend = document.getElementById("btn-chat-send");
-  const chatMessages = document.getElementById("chat-messages");
-  const typingIndicator = document.getElementById("typing-indicator");
-  const chatStatusHint = document.getElementById("chat-status-hint");
+  function renderScreenshotResult(data) {
+    const isPhishing = data.result === "phishing";
+    screenshotResultCard.className = `result-card ${isPhishing ? 'verdict-phishing' : 'verdict-safe'}`;
 
-  function enableChat(scanData) {
-    currentScan = scanData;
-    chatInput.disabled = false;
-    btnChatSend.disabled = false;
-    chatStatusHint.textContent = `Asking about: ${scanData.url}`;
+    document.getElementById("screenshot-verdict-title").textContent = isPhishing ? "Looks like phishing" : "Looks safe";
+    document.getElementById("screenshot-verdict-icon").innerHTML = isPhishing
+      ? `<svg viewBox="0 0 24 24" width="24" height="24" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="24" height="24" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
+
+    document.getElementById("screenshot-url-display").textContent = data.url || "Visual page inspection";
+    document.getElementById("screenshot-confidence-display").textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+
+    animateRing(
+      document.getElementById("screenshot-score-ring-fill"),
+      document.getElementById("screenshot-score-text"),
+      data.safety_score,
+      isPhishing
+    );
+
+    const rList = document.getElementById("screenshot-reasons-list");
+    rList.innerHTML = "";
+    if (data.reasons) {
+      data.reasons.forEach(r => {
+        const li = document.createElement("li");
+        li.className = "reason-item";
+        li.textContent = r;
+        rList.appendChild(li);
+      });
+    }
+
+    screenshotResultCard.classList.remove("hidden");
   }
 
-  async function handleSendChat(customQuery = null) {
-    const question = customQuery || chatInput.value.trim();
+  // ============================================================================
+  // 8. SCREEN 5: CHAT LOGIC (Section 6)
+  // ============================================================================
+  const chatContextText = document.getElementById("chat-context-text");
+  const btnChatGoScan = document.getElementById("btn-chat-go-scan");
+  const chatMessages = document.getElementById("chat-messages");
+  const typingIndicator = document.getElementById("typing-indicator");
+  const chatForm = document.getElementById("chat-form");
+  const chatInput = document.getElementById("chat-input");
+
+  function updateChatContext(scanData) {
+    if (scanData && scanData.url) {
+      chatContextText.textContent = `About: ${scanData.url}`;
+      btnChatGoScan.classList.add("hidden");
+    } else {
+      chatContextText.textContent = "No scan yet";
+      btnChatGoScan.classList.remove("hidden");
+    }
+  }
+
+  if (btnChatGoScan) {
+    btnChatGoScan.addEventListener("click", () => goTo("scanner"));
+  }
+
+  if (chatForm) {
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      sendChatMessage();
+    });
+  }
+
+  document.querySelectorAll(".quick-chip-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const q = btn.dataset.question;
+      if (q) {
+        chatInput.value = q;
+        sendChatMessage();
+      }
+    });
+  });
+
+  async function sendChatMessage() {
+    const question = chatInput.value.trim();
     if (!question) return;
 
-    appendMessage(question, "user");
-    if (!customQuery) chatInput.value = "";
+    appendBubble(question, "user");
+    chatInput.value = "";
     typingIndicator.classList.remove("hidden");
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -566,19 +907,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, scan: currentScan })
+        body: JSON.stringify({ question, scan: lastScannedResult })
       });
       const data = await res.json();
       typingIndicator.classList.add("hidden");
-      appendMessage(data.answer || "No response received.", "bot");
+      appendBubble(data.answer || "No response received.", "bot");
     } catch (err) {
       typingIndicator.classList.add("hidden");
-      appendMessage("Can't reach the server. Try again.", "bot");
+      appendBubble("Can't reach the server. Make sure the backend is running.", "bot");
     }
   }
-  window.handleSendChat = handleSendChat;
 
-  function appendMessage(text, sender) {
+  function appendBubble(text, sender) {
     const bubble = document.createElement("div");
     bubble.className = `chat-bubble ${sender}-bubble`;
     bubble.textContent = text;
@@ -586,27 +926,35 @@ document.addEventListener("DOMContentLoaded", () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  document.querySelectorAll(".quick-chip-btn").forEach(chip => {
-    chip.addEventListener("click", () => {
-      const q = chip.getAttribute("data-query");
-      if (q) handleSendChat(q);
-    });
-  });
+  // ============================================================================
+  // 9. SCREEN 6: HISTORY LOGIC (Section 6)
+  // ============================================================================
+  const historyTbody = document.getElementById("history-tbody");
+  const historyEmptyState = document.getElementById("history-empty-state");
+  const scansTable = document.getElementById("scans-table");
+  const btnHistoryScan = document.getElementById("btn-history-scan");
 
-  /**
-   * Recent Scans Table loader
-   */
+  if (btnHistoryScan) {
+    btnHistoryScan.addEventListener("click", () => goTo("scanner"));
+  }
+
   async function loadHistory() {
-    const tbody = document.getElementById("scans-table-body");
+    if (!historyTbody) return;
     try {
       const res = await fetch("/history");
       if (!res.ok) return;
       const data = await res.json();
-      tbody.innerHTML = "";
+      historyTbody.innerHTML = "";
+
       if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="4">No scans recorded yet. Enter a link above to get started.</td></tr>`;
+        scansTable.classList.add("hidden");
+        historyEmptyState.classList.remove("hidden");
         return;
       }
+
+      scansTable.classList.remove("hidden");
+      historyEmptyState.classList.add("hidden");
+
       data.forEach(scan => {
         const tr = document.createElement("tr");
         const isPhishing = scan.result === "phishing";
@@ -616,9 +964,20 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${scan.safety_score}/100</td>
           <td>${formatDate(scan.created_at)}</td>
         `;
-        tbody.appendChild(tr);
+
+        // Clicking a row opens the scanner with that link filled in (Section 6)
+        tr.addEventListener("click", () => {
+          urlInput.value = scan.url;
+          btnClear.classList.remove("hidden");
+          goTo("scanner");
+          handleSingleScan();
+        });
+
+        historyTbody.appendChild(tr);
       });
-    } catch (e) {}
+    } catch (e) {
+      // Offline fallback
+    }
   }
 
   function escapeHtml(str) {
@@ -636,34 +995,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Back to top button listener
-  const backToTopBtn = document.getElementById("back-to-top");
-  window.addEventListener("scroll", () => {
-    if (backToTopBtn) {
-      if (window.scrollY > window.innerHeight * 0.7) {
-        backToTopBtn.classList.remove("hidden");
-      } else {
-        backToTopBtn.classList.add("hidden");
-      }
-    }
-  });
-
-  // Reveal on scroll observer
-  const reveals = document.querySelectorAll(".reveal-on-scroll");
-  if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-    reveals.forEach(el => observer.observe(el));
-  } else {
-    reveals.forEach(el => el.classList.add("is-visible"));
+  // ============================================================================
+  // 10. SCREEN 7: HOW IT WORKS (Section 6)
+  // ============================================================================
+  const howTryBtn = document.getElementById("how-try-btn");
+  if (howTryBtn) {
+    howTryBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      goTo("scanner");
+    });
   }
 
-  // Load history on boot
-  loadHistory();
+  // ============================================================================
+  // 11. INITIALIZATION & ENTRANCE CHOREOGRAPHY
+  // ============================================================================
+  function init() {
+    setFeaturedPlanet("earth");
+
+    // Read initial hash route
+    const initialRoute = window.location.hash.replace(/^#\/?/, "") || "home";
+    goTo(initialRoute, false);
+
+    // Warm planet videos on idle
+    setTimeout(warmAll, 2000);
+  }
+
+  init();
 });
