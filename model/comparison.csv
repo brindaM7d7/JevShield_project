@@ -1,4 +1,4 @@
 Model,CV_F1,CV_Accuracy,CV_Precision,CV_Recall,CV_Time_Sec
-TF-IDF + Features + Logistic Regression,0.9467,0.9476,0.9619,0.9321,117.73
-Random Forest (200 trees),0.848,0.8508,0.864,0.8326,9.97
-HistGradientBoosting,0.8337,0.8392,0.8628,0.8065,5.82
+TF-IDF + Features + Logistic Regression,0.9319,0.9336,0.9569,0.9081,130.69
+Random Forest (200 trees),0.8258,0.8293,0.8432,0.8091,10.54
+HistGradientBoosting,0.8204,0.8273,0.8548,0.7886,10.46
