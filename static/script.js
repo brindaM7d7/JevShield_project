@@ -248,9 +248,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const circumference = 2 * Math.PI * radius; // 314.159
     const offset = circumference - (targetScore / 100) * circumference;
 
-    let strokeColor = "#7F9468"; // deep sage safe
-    if (isPhishing) strokeColor = "#9B3030"; // dark red
-    else if (targetScore < 70) strokeColor = "#D9942E"; // amber
+    const rootStyles = getComputedStyle(document.documentElement);
+    const earthColor = rootStyles.getPropertyValue('--earth').trim() || '#5BA8F5';
+    const marsLineColor = rootStyles.getPropertyValue('--mars-line').trim() || '#E8735A';
+    const venusColor = rootStyles.getPropertyValue('--venus').trim() || '#E8B04C';
+
+    let strokeColor = earthColor; // Earth blue safe
+    if (isPhishing) strokeColor = marsLineColor; // Mars line unsafe
+    else if (targetScore < 70) strokeColor = venusColor; // Venus gold caution
 
     ringFill.style.stroke = strokeColor;
     ringFill.style.strokeDashoffset = circumference;
@@ -322,12 +327,12 @@ document.addEventListener("DOMContentLoaded", () => {
       singleResultCard.classList.add("state-phishing");
       verdictTitle.textContent = "Looks like phishing";
       verdictTitle.className = "verdict-title verdict-phishing";
-      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="#9B3030"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`;
+      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`;
     } else {
       singleResultCard.classList.add("state-safe");
       verdictTitle.textContent = "Looks safe";
       verdictTitle.className = "verdict-title verdict-safe";
-      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="#7F9468"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
+      verdictIcon.innerHTML = `<svg viewBox="0 0 24 24" width="28" height="28" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
     }
 
     scannedUrlDisplay.textContent = data.url;
@@ -339,7 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (data.reasons && data.reasons.length > 0) {
       data.reasons.forEach(r => {
         const li = document.createElement("li");
-        li.className = "reason-item";
+        const isSafeNotice = r.toLowerCase().includes("no common phishing") || r.toLowerCase().includes("safe");
+        li.className = `reason-item ${isSafeNotice ? 'reason-safe' : 'reason-warning'}`;
         li.textContent = r;
         reasonsList.appendChild(li);
       });
@@ -440,8 +446,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (data.note) {
       compareBanner.textContent = data.note;
       compareBanner.classList.remove("hidden");
+      if (data.note.toLowerCase().includes("similar") || data.safer === "similar") {
+        compareBanner.className = "compare-banner banner-similar";
+        compareResultContainer.classList.add("state-similar");
+      } else {
+        compareBanner.className = "compare-banner";
+        compareResultContainer.classList.remove("state-similar");
+      }
     } else {
       compareBanner.classList.add("hidden");
+      compareResultContainer.classList.remove("state-similar");
     }
 
     const badgeA = document.getElementById("badge-a");
@@ -468,8 +482,8 @@ document.addEventListener("DOMContentLoaded", () => {
     vTitle.className = `verdict-title ${isPhishing ? 'verdict-phishing' : 'verdict-safe'}`;
 
     vIcon.innerHTML = isPhishing
-      ? `<svg viewBox="0 0 24 24" width="22" height="22" fill="#9B3030"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
-      : `<svg viewBox="0 0 24 24" width="22" height="22" fill="#7F9468"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
+      ? `<svg viewBox="0 0 24 24" width="22" height="22" fill="var(--mars-line)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="22" height="22" fill="var(--earth)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
 
     document.getElementById(`url-display-${slot}`).textContent = cardData.url;
     document.getElementById(`score-${slot}`).textContent = cardData.safety_score;
