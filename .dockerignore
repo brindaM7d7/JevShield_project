@@ -1,0 +1,8 @@
+.git
+venv
+data/phishing_urls.csv
+*.db
+.env
+__pycache__
+.pytest_cache
+*.pyc

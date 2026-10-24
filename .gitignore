@@ -1,0 +1,29 @@
+# Database & Secrets
+*.db
+.env
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest
+.pytest_cache/
+
+# Large Dataset (downloaded manually, not committed)
+data/phishing_urls.csv
+
+# Model binaries (CI / training rebuilds it)
+model/*.joblib
+model/model.joblib
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
