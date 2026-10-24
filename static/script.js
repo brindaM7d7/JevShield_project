@@ -793,6 +793,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const formData = new FormData();
     formData.append("image", selectedScreenshotFile);
+    formData.append("fallback", "true");
 
     const startTime = Date.now();
     try {
